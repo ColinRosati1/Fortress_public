@@ -1,0 +1,33 @@
+task :build do
+   #p ARGV
+   localfile = ARGV[1]
+   filename = File.basename localfile
+   backslash = "\b"
+   exe = "#{filename}"
+   puts "exe: #{exe}"
+   text = File.read localfile 
+   md = text.match /remote_pi_dir = (.*)/
+   p md[1]
+   remote_dir = md[1]
+   sh "sshpass -p 'raspberry' scp '#{localfile}' pi@raspberrypi.local:'#{remote_dir}'"
+   sh "sshpass -p 'raspberry' ssh pi@raspberrypi.local 'cd \"#{remote_dir}\" && rake build \"#{filename}\" \"#{filename}\"'"
+   
+
+   # "shell_cmd": "sshpass -p 'raspberry' scp $file pi@192.168.33.79:/home/pi/Documents/C && sshpass -p 'raspberry' ssh
+   # sshpass -p 'raspberry' scp -r pi@192.168.47.20:/home/pi/Documents/Dev/ 
+ 
+end
+
+task :build2 do
+   #puts ARGV
+   localfile = ARGV[1]
+   filename = File.basename localfile
+   #puts "localfile: #{localfile}"
+   text = File.read localfile
+   md = text.match /remote_pi_dir = (.*)/
+   #p md[1]
+   remote_dir = md[1]
+  sh "sshpass -p 'raspberry' scp '#{localfile}' pi@192.168.33.79:'#{remote_dir}'"
+  sh "sshpass -p 'raspberry' ssh pi@192.168.33.79 'cd \"#{remote_dir}\" && rake build \"#{filename}\"'"
+  # "shell_cmd": "sshpass -p 'raspberry' scp $file pi@192.168.33.79:/home/pi/Documents/C && sshpass -p 'raspberry' ssh pi$
+end
