@@ -7,8 +7,6 @@
 
  * use -lwiring in compile
 
- // remote_pi_dir = /home/pi/Documents/C
- _^_for build tool _^_
  ***********************************************************************
 
 Libraries
@@ -23,8 +21,9 @@ Libraries
 /*-------------------------------------------------------
 SPI globals
 */
-#define SPI_CHAN    0           //sets device ?
-#define MODE        0 // mode 0- from wiringPiSPI.c master mode 0 is default
+#define SPI_CHAN    0           //channel is either spidevice0.0 or spidevice0.1 
+#define MODE        0           //chip select is 0 for falling edge 3 for rising edge
+#define SPEED       20,000,000  // max speed is 20 MHz
 
 /*-------------------------------------------------------*/
 //FRAM init & commands
@@ -50,10 +49,11 @@ SPI globals
 #define FRAM_READ           0x03  // Read memory data.
 #define FRAM_WRITE          0x02  // Write memory data. 
 
-static const  char     *spiDev0  = "/dev/spidev0.0" ;
-static const  char     *spiDev1  = "/dev/spidev0.1" ;
-
-static void fram_Setup() // initialize pin modes, and pin states 
+/*-------------------------------------------------------*/
+//fram_Setup:
+// initializes pin modes, and pin states 
+/*-------------------------------------------------------*/
+static void fram_Setup() // 
 {
   pinMode (FRAM_CS0_PIN, OUTPUT);
   pinMode (FRAM_CS1_PIN, OUTPUT);
@@ -65,13 +65,21 @@ static void fram_Setup() // initialize pin modes, and pin states
   digitalWrite (FRAM_HOLD_PIN, FRAM_HOLD_OFF) ;
 }
 
-static void fram_WREN() //write enable must be set befor every write function
+/*-------------------------------------------------------*/
+//fram_WREN:
+// write //write enable must be set befor every write function
+/*-------------------------------------------------------*/
+static void fram_WREN() 
 {
   char buf[4];
   buf[0] =  0x06; 
   wiringPiSPIDataRW (SPI_CHAN, buf, 1);
 }
 
+/*-------------------------------------------------------*/
+//fram_WRSR:
+// write status register used to make sure there absolutely no write protection on
+/*-------------------------------------------------------*/
 static void fram_WRSR() //writes f-ram status register to 0 to remove all hardware protection
 { 
  fram_WREN(); //write enable command
@@ -79,14 +87,23 @@ static void fram_WRSR() //writes f-ram status register to 0 to remove all hardwa
  buf[0] = FRAM_WRSR; //opcode
  buf[1] = 0; // write to status register with 0
  wiringPiSPIDataRW (SPI_CHAN, buf, sizeof(buf));
-// printf("WRSR buf = %d, %d\n", buf[0], buf[1]);
+// printf("WRSR buf = %d, %d\n", buf[0], buf[1]); // debuging
 }
 
-void fram_init(int fd, int speed)
+
+/*-------------------------------------------------------*/
+//fram_init:
+// uses wiringPiSetup for gpio pin mapping
+// sets the GPIO pin modes, states
+// tests if SPI bus file device is available
+// calls fram_WRSR to make sure there absolutely no write protection on
+/*-------------------------------------------------------*/
+void fram_init()
 {
+  int fd;
   wiringPiSetup(); //wiringPi setups up pin mapping and Rpi's SPI devices
   fram_Setup();    //initialize pin modes, and pin states 
-  if ((fd = wiringPiSPISetupMode (SPI_CHAN, speed, MODE)) < 0)  //tests to see if SPI bus file device is seen
+  if ((fd = wiringPiSPISetupMode (SPI_CHAN, SPEED, MODE)) < 0)  //tests to see if SPI bus file device is seen
   {
     fprintf (stderr, "Can't open the SPI bus: %s\n", strerror (errno)) ;
     exit (EXIT_FAILURE) ;
@@ -94,7 +111,11 @@ void fram_init(int fd, int speed)
   fram_WRSR();
 }
 
-static void fram_RDSR() //Reading the status register provides information about the current state of the write-protection features
+/*-------------------------------------------------------*/
+//fram_RDSR:
+// Reads the status register provides information about the current state of the write-protection features
+/*-------------------------------------------------------*/
+static void fram_RDSR() 
 {
   char buf[2];
   buf[0] = FRAM_RDSR;
@@ -103,6 +124,11 @@ static void fram_RDSR() //Reading the status register provides information about
   printf("RDSR buf = %d, %d\n", buf[0], buf[1]);
 }
 
+/*-------------------------------------------------------*/
+// writes data to fram with the address and size 
+// uses a transmit buffer to write the opcode, address, and data
+// writes using the SPI bus
+/*-------------------------------------------------------*/
 void fram_write(int address, char *data, int size)
 {
   char command_buf[size + 3];
@@ -111,9 +137,15 @@ void fram_write(int address, char *data, int size)
   command_buf[2] = address;  // least significant byte first
   memcpy(&command_buf[3], data, size);
   fram_WREN(); //write enable command  
-  wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));// TODO check function for error
+  wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));// this function returns: return ioctl (spiFds [channel], SPI_IOC_MESSAGE(1), &spi) ;
 }
 
+
+/*-------------------------------------------------------*/
+// reads data from fram's address and size 
+// reads from a transmit buffer
+// read using the SPI bus
+/*-------------------------------------------------------*/
 void fram_read(int address, char *data, int size)
 {
   char command_buf[size + 3];
@@ -121,7 +153,7 @@ void fram_read(int address, char *data, int size)
   command_buf[0] = FRAM_READ; //opcode
   command_buf[1] = address >> 8;  // sends the most significant byte first
   command_buf[2] = address;  // least significant byte first
-  wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));// TODO check function for error
+  wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));
   memcpy(data, &command_buf[3], size);
 }
 

@@ -7,6 +7,6 @@ void fram_read(int address, char *data, int size);
 
 void fram_write(int address, char *data, int size);
 
-void fram_init(int fd, int speed);
-
+void fram_init();
+ 
 #endif
