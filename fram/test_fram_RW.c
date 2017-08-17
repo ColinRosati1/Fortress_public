@@ -11,8 +11,7 @@
 
 int main (void)
 {
-  int fd; // TODO check max speed and set it
-  fram_init(fd); // wiringPi pin mapping, spi devices, fram pin setup 
+  fram_init(); // wiringPi pin mapping, spi devices, fram pin setup 
   int address = 50; 
   char data[] = "new string";
   fram_write(address, data, sizeof(data));
