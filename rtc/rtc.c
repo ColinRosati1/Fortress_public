@@ -17,24 +17,43 @@ After power-on, CS1 (E) is held low. required prior to the start of any operatio
 
 A typical power-up flow is to read the time of last access, then clear the HT bit, then read the
 current time. 
+
+
+	// binary coded decimal (BCD) format
+	//read the time, frequency, alarms, flags
+	//read from address and bit 
+	//address 00H - 07H for time
+	// 08H for digital calibration
+	// 09H Watch dog
+	// 0AH - 0EH alarms
+	// 0FH Flags
+	// 10H Timer value
+	// 11H Timer control
+	// 12H Alanlog calibration
+	// 13H Square Wave
+	// 14H - 18H Alarms 2
+	// 19H - 1FH SRAM
 *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
 #include <string.h>
-
 #include <wiringPi.h> //importing wiringPi library for pin mapping I/O control
+#include <inttypes.h>
 
-#define SPI_CLK_SPEED   100000 //TODO look up time in data sheet max clk speed
-#define SPI_CHAN    	1      //chip select 1
+#include "rtc.h"
+
+#define SPI_CLK_SPEED   5000000 //10mhz is max, 1mhz is min
+#define SPI_CHAN    	1      // chip select 1
 #define SPI_MODE        0 	   // supports SPI mode 0 [CPOL = 0, CPHA = 0]
+#define CLK_SIZE		32
 
 /**************************** GLOBALS *************************************************/
 #define RTC_CS			11		//wiringPi pin
-
 #define RTC_READ		0
 #define RTC_WRITE		1
+#define STP_BIT 		0
 
 /**************************** TIME REGISTER ADDRESSES *************************************************/
 #define SECOND 			0X01	// register address
@@ -54,28 +73,24 @@ static int	day 	=	0Xa5;
 static int	month 	=	0Xb6;
 static int	year 	=	0Xc7;
 
-
-static int address 		20; 	//TODO check address accessible starting points?
-
-static void rtc_setup()
-{
-//static GPIO states, probably dont need this
-//TODO confirm CS is low on boot
-	pinmode(RTC_CS, OUTPUT);
-	digitalwrite(RTC_CS, LOW);
-}
-
+/*******************************************************
+rtc_setup initializes pins for reading and writing
+opens and tests SPI channel
+*******************************************************/
 void rtc_init()
 {
-
   int fd;
   wiringPiSetup(); //wiringPi setups up pin mapping and Rpi's SPI devices
-  rtc_Setup();    //initialize pin modes, and pin states 
-  if ((fd = wiringPiSPISetupMode (SPI_CHAN, speed, MODE)) < 0)  //tests to see if SPI bus file device is seen
+  if ((fd = wiringPiSPISetupMode (SPI_CHAN, SPI_CLK_SPEED, SPI_MODE)) < 0)  //tests to see if SPI bus file device is seen
   {
     fprintf (stderr, "Can't open the SPI bus: %s\n", strerror (errno)) ;
     exit (EXIT_FAILURE) ;
   }
+  //clear the stop bit to 0
+	char command_buf[3];
+  	memset(command_buf, 0, sizeof(command_buf));
+  	command_buf[2] = STP_BIT << 7; // make sure sets stop bit is set to 0
+  	wiringPiSPIDataRW (SPI_CHAN, command_buf,(command_buf + 3));
 }
 
 /*******************************************************
@@ -84,71 +99,89 @@ halt bit at 0X0Ch bit 6 needs to be set to 0 to update
 *******************************************************/
 void rtc_halt_clear()
 {
-	uint8_t value = 0 		// not sure if this is proper to set 0 to the 6th bit at register 0X0Ch
-	uint8_t Haltclear = value&~(1<<6)
+	char command_buf[14];
+  	command_buf[13] = 0 << 6; // make sure sets stop bit is set to 0
+  	wiringPiSPIDataRW (SPI_CHAN, command_buf,(command_buf + 3));
 }
 
+/*******************************************************
+clock_set resets clock
+*******************************************************/
 void clock_set()
 {
-	char buf[8]
-	buf[0] = 1;// set the ST bit to 1
-	buf[0] = 0;// reset the ST bit to “kick-start” to the oscillator circuit.
+	char command_buf[3];
+  	memset(command_buf, 0, sizeof(command_buf));
+  	command_buf[2] = 1 << 7; // make sure sets stop bit is set to 0
+  	wiringPiSPIDataRW (SPI_CHAN, command_buf,(command_buf + 3));
+  	command_buf[2] = STP_BIT << 7; // make sure sets stop bit is set to 0
+  	wiringPiSPIDataRW (SPI_CHAN, command_buf,(command_buf + 3));
 }
 
-const char *byte_to_binary(int x)
-{
-    static char b[9];
-    b[0] = '\0';
-    int z;
-    for (z = 128; z > 0; z >>= 1){ strcat(b, ((x & z) == z) ? "1" : "0");}
-    return b;
-}
+// const char *byte_to_binary(int x)
+// {
+// //     static char b[9];
+// //     b[0] = '\0';
+// //     int z;
+// //     for (z = 128; z > 0; z >>= 1){ strcat(b, ((x & z) == z) ? "1" : "0");}
+// //     return b;
+//  }
 
 int read_time()
 {
 	//TODO #1 make a bin mask to read back time because [0,0,0,0,0,0,0,0] - Time uses 0 - 3 as the time bits
 	//TODO #2 (optional weigh pros/cons of #1 & #2)make a binary[0000000] into 02d[00] int convertor
-	bitmask();
-	
+	//bitmask();
 
-	
-
-	printf("TIME\n Year %02d : Month %02d : Day %02d :\n%02d : %02d : %02d\n",byte_to_binary(year),byte_to_binary(month),byte_to_binary(day),byte_to_binary(hour),byte_to_binary(minute),byte_to_binary(second))
+	//printf("TIME\n Year %02d : Month %02d : Day %02d :\n%02d : %02d : %02d\n",byte_to_binary(year),byte_to_binary(month),byte_to_binary(day),byte_to_binary(hour),byte_to_binary(minute),byte_to_binary(second));
 }
 
-void read_rtc()
+void read_rtc(int address, char *data)
 {
-	// binary coded decimal (BCD) format
-	//read the time, frequency, alarms, flags
-	//read from address and bit 
-	//address 00H - 07H for time
-	// 08H for digital calibration
-	// 09H Watch dog
-	// 0AH - 0EH alarms
-	// 0FH Flags
-	// 10H Timer value
-	// 11H Timer control
-	// 12H Alanlog calibration
-	// 13H Square Wave
-	// 14H - 18H Alarms 2
-	// 19H - 1FH SRAM
+	//register 1 - 8 reads: 00h(1)-mircosec, 01h(2)-mircosec, 02h(3)-min, 03h(4)-hour, 04h(5)-day/week, 05h(6)-day/month, 06h(7)-month, 07(8)-year  
+	char command_buf[CLK_SIZE];
+  	memset(command_buf, 0, sizeof(command_buf));
+  	command_buf[0] = address |  RTC_READ << 7; // read bit is 0 then addr for remain 7 bits
+  	int i;
+  	for(i = 0 ; i < 50000; i ++)
+  	{
+  		wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));
 
-	//read the year, month, day, hour, min, sec  
+  	}
+  	memcpy(data, &command_buf[2], CLK_SIZE);
 
-	char buf[4];
-	buf[0] = RTC_READ; //opcode
-	buf[0] = address >> 8;
-	// or buf[0] RTC_READ + address >>7
-	// buf[0] = 1 0 0 0 1 0 1 1  
-	//          R < A D D R - >     1st bit is RW, 2nd - 8th is address
-	buf[1] = data
+	printf("Address(%x) %x  %x  %x  %x  %x  %x  %x \n", command_buf[0],command_buf[1],command_buf[2],command_buf[3], command_buf[4], command_buf[5], command_buf[6], command_buf[7],command_buf[8]);
 
-	read_time()
 }
 
-void write_rtc()
+void write_rtc(int address, char *data)
 {
 	//writing anywhere in 00h - 07h registers will result in an update of the RTC counters and a reset of the divider chain
+	char command_buf[CLK_SIZE];
+  	memset(command_buf, 0, sizeof(command_buf));
+  	
+  	command_buf[0] = address |  RTC_WRITE << 7;// read bit is 0 then addr for remain 7 bits
+
+  	//write command to set the time manually YYYY/MM/DD | HH : MM : SS
+  	printf("ENTER DATE YYYY/MM/DD | HH : MM : SS\n");
+  	// scanf("%d", command_buf[8] << 3); scanf("%d", command_buf[8] << 2); scanf("%d", command_buf[8] << 1); scanf("%d",  command_buf[8]);
+  	// // MONTH
+  	// scanf("%d", command_buf[7] << 1); scanf("%d",  command_buf[7]);
+  	// // DAY
+  	// scanf("%d", command_buf[5] << 1); scanf("%d", command_buf[5]);
+  	// // HOUR
+  	// scanf("%d", command_buf[4] << 1); scanf("%d", command_buf[4]);
+  	// // MINUTE
+  	// scanf("%d", command_buf[3] << 1); scanf("%d", command_buf[3]);
+  	// // SEC
+  	// scanf("%d", command_buf[2] << 1); scanf("%d", command_buf[2]);
+
+
+
+  	
+  	wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));
+  	memcpy(data, &command_buf[2], CLK_SIZE);
+
+	//printf("%02i/%02i/%02i | %02D : %02D : %02D\n", command_buf[8],command_buf[7],command_buf[5],command_buf[4],command_buf[3],command_buf[2]);
 }
 
 void alarm()
