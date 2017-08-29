@@ -33,6 +33,15 @@ current time.
 	// 13H Square Wave
 	// 14H - 18H Alarms 2
 	// 19H - 1FH SRAM
+
+	https://github.com/google/kmsan/blob/master/drivers/rtc/rtc-m41t93.c this is a good resource same rtc chip
+
+do these work?
+#define BCD2BIN(val) (((val)&15) + ((val)>>4)*10)
+#define BIN2BCD(val) ((((val)/10)<<4) + (val)%10)
+
+
+TODO make a time struct
 *****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
