@@ -55,6 +55,22 @@ int main(void)
 //    return result;
 //}
 
+<<<<<<< HEAD
+=======
+int main(void)
+{
+  uint8_t address = 22;  
+  char data[32]  ;
+  rtc_init();
+  clock_set();
+  write_rtc(address, data);
+  //read_rtc(address, data);
+
+  return 0;
+}
+
+
+>>>>>>> 2c7f600679dedd788216af227224d5508053c851
 
 
   /****************************** testing time **********************/

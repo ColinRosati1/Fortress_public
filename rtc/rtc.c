@@ -34,6 +34,13 @@ current time.
 	// 14H - 18H Alarms 2
 	// 19H - 1FH SRAM
 
+<<<<<<< HEAD
+TODO Write Time
+TODO Network sync Time
+
+****************************  Libraries  *************************************************/
+
+=======
 	https://github.com/google/kmsan/blob/master/drivers/rtc/rtc-m41t93.c this is a good resource same rtc chip
 
   https://github.com/mxgxw/MFRC522-python/blob/master/MFRC522.py reasource in python with similar chip
@@ -43,7 +50,11 @@ TODO load rtc-m41t93.ko kernal with modprobe or enable at boot in config file, o
     sudo modprobe rtc-m41t93 , check its loaded with lsmod
 
 *****************************************************************************/
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6882c7acb8d51c36a32dd3d8f5694cf738bf980c
+>>>>>>> 2c7f600679dedd788216af227224d5508053c851
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -51,20 +62,22 @@ TODO load rtc-m41t93.ko kernal with modprobe or enable at boot in config file, o
 #include <string.h>
 #include <wiringPi.h> //importing wiringPi library for pin mapping I/O control
 #include <inttypes.h>
+<<<<<<< HEAD
 #include <linux/kernel.h>
 
+=======
+>>>>>>> 2c7f600679dedd788216af227224d5508053c851
 #include "rtc.h"
-
-#define SPI_CLK_SPEED   5000000 //10mhz is max, 1mhz is min
-#define SPI_CHAN    	1      // chip select 1
-#define SPI_MODE        0 	   // supports SPI mode 0 [CPOL = 0, CPHA = 0]
-#define CLK_SIZE		32
 
 /**************************** GLOBALS *************************************************/
 #define RTC_CS			11		//wiringPi pin
 #define RTC_READ		0
 #define RTC_WRITE		1
 #define STP_BIT 		0
+#define SPI_CLK_SPEED   5000000 //10mhz is max, 1mhz is min
+#define SPI_CHAN    	1      // chip select 1
+#define SPI_MODE        0 	   // supports SPI mode 0 [CPOL = 0, CPHA = 0]
+#define CLK_SIZE		32
 
 /**************************** TIME REGISTER ADDRESSES *************************************************/
 #define SECOND 			0X01	// register address
@@ -166,8 +179,13 @@ int read_rtc(int address, uint8_t *data)
   	{
   		wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));
   	}
+<<<<<<< HEAD
 	printf("Address(%x) %x  %x  %x  %x  %x  %x  %x \n", command_buf[0],command_buf[1],command_buf[2],command_buf[3], command_buf[4], command_buf[5], command_buf[6], command_buf[7],command_buf[8]);
   return 0;
+=======
+  	memcpy(data, &command_buf[2], CLK_SIZE);
+	printf("Address(%x) %x  %x  %x  %x  %x  %x  %x \n", command_buf[0],command_buf[1],command_buf[2],command_buf[3], command_buf[4], command_buf[5], command_buf[6], command_buf[7],command_buf[8]);
+>>>>>>> 2c7f600679dedd788216af227224d5508053c851
 }
 
 /*******************************************************
@@ -182,6 +200,7 @@ int write_rtc(int address, uint8_t *data)
 
   	//write command to set the time manually YYYY/MM/DD | HH : MM : SS
   	printf("ENTER DATE YYYY/MM/DD | HH : MM : SS\n");
+<<<<<<< HEAD
 
   	wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));
   	memcpy(data, &command_buf[2], CLK_SIZE);
@@ -255,6 +274,23 @@ void get_time_rtc()
   tm->tm_year = BCD2BIN(buf[M41T93_REG_YEAR]) + century_after_1900 * 100;
 
   // return ret < 0 ? ret : rtc_valid_tm(tm);
+=======
+  	// scanf("%d", command_buf[8] << 3); scanf("%d", command_buf[8] << 2); scanf("%d", command_buf[8] << 1); scanf("%d",  command_buf[8]);
+  	// // MONTH
+  	// scanf("%d", command_buf[7] << 1); scanf("%d",  command_buf[7]);
+  	// // DAY
+  	// scanf("%d", command_buf[5] << 1); scanf("%d", command_buf[5]);
+  	// // HOUR
+  	// scanf("%d", command_buf[4] << 1); scanf("%d", command_buf[4]);
+  	// // MINUTE
+  	// scanf("%d", command_buf[3] << 1); scanf("%d", command_buf[3]);
+  	// // SEC
+  	// scanf("%d", command_buf[2] << 1); scanf("%d", command_buf[2]);
+  	
+  	wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));
+  	memcpy(data, &command_buf[2], CLK_SIZE);
+	//printf("%02i/%02i/%02i | %02D : %02D : %02D\n", command_buf[8],command_buf[7],command_buf[5],command_buf[4],command_buf[3],command_buf[2]);
+>>>>>>> 2c7f600679dedd788216af227224d5508053c851
 }
 
 
