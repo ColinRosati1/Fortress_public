@@ -34,11 +34,23 @@ current time.
 	// 14H - 18H Alarms 2
 	// 19H - 1FH SRAM
 
+<<<<<<< HEAD
 TODO Write Time
 TODO Network sync Time
 
 ****************************  Libraries  *************************************************/
 
+=======
+	https://github.com/google/kmsan/blob/master/drivers/rtc/rtc-m41t93.c this is a good resource same rtc chip
+
+do these work?
+#define BCD2BIN(val) (((val)&15) + ((val)>>4)*10)
+#define BIN2BCD(val) ((((val)/10)<<4) + (val)%10)
+
+
+TODO make a time struct
+*****************************************************************************/
+>>>>>>> 6882c7acb8d51c36a32dd3d8f5694cf738bf980c
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
