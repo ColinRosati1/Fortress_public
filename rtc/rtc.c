@@ -33,7 +33,12 @@ current time.
 	// 13H Square Wave
 	// 14H - 18H Alarms 2
 	// 19H - 1FH SRAM
-*****************************************************************************/
+
+TODO Write Time
+TODO Network sync Time
+
+****************************  Libraries  *************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -41,19 +46,17 @@ current time.
 #include <string.h>
 #include <wiringPi.h> //importing wiringPi library for pin mapping I/O control
 #include <inttypes.h>
-
 #include "rtc.h"
-
-#define SPI_CLK_SPEED   5000000 //10mhz is max, 1mhz is min
-#define SPI_CHAN    	1      // chip select 1
-#define SPI_MODE        0 	   // supports SPI mode 0 [CPOL = 0, CPHA = 0]
-#define CLK_SIZE		32
 
 /**************************** GLOBALS *************************************************/
 #define RTC_CS			11		//wiringPi pin
 #define RTC_READ		0
 #define RTC_WRITE		1
 #define STP_BIT 		0
+#define SPI_CLK_SPEED   5000000 //10mhz is max, 1mhz is min
+#define SPI_CHAN    	1      // chip select 1
+#define SPI_MODE        0 	   // supports SPI mode 0 [CPOL = 0, CPHA = 0]
+#define CLK_SIZE		32
 
 /**************************** TIME REGISTER ADDRESSES *************************************************/
 #define SECOND 			0X01	// register address
@@ -145,12 +148,9 @@ void read_rtc(int address, char *data)
   	for(i = 0 ; i < 50000; i ++)
   	{
   		wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));
-
   	}
   	memcpy(data, &command_buf[2], CLK_SIZE);
-
 	printf("Address(%x) %x  %x  %x  %x  %x  %x  %x \n", command_buf[0],command_buf[1],command_buf[2],command_buf[3], command_buf[4], command_buf[5], command_buf[6], command_buf[7],command_buf[8]);
-
 }
 
 void write_rtc(int address, char *data)
@@ -174,13 +174,9 @@ void write_rtc(int address, char *data)
   	// scanf("%d", command_buf[3] << 1); scanf("%d", command_buf[3]);
   	// // SEC
   	// scanf("%d", command_buf[2] << 1); scanf("%d", command_buf[2]);
-
-
-
   	
   	wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));
   	memcpy(data, &command_buf[2], CLK_SIZE);
-
 	//printf("%02i/%02i/%02i | %02D : %02D : %02D\n", command_buf[8],command_buf[7],command_buf[5],command_buf[4],command_buf[3],command_buf[2]);
 }
 

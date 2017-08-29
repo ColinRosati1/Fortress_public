@@ -40,13 +40,12 @@ compile: with rtc.c && -lwiringPi
 
 int main(void)
 {
-
   uint8_t address = 22;  
   char data[32]  ;
   rtc_init();
   clock_set();
   write_rtc(address, data);
-  read_rtc(address, data);
+  //read_rtc(address, data);
 
   return 0;
 }
