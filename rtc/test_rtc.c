@@ -2,7 +2,7 @@
 test_rtc.c does read and wrties to Real Time Clock over SPI
 data sheet: http://www.mouser.com/ds/2/389/m41t93-955030.pdf
 
-compile: with rtc.c && -lwiringPi
+compile with:  gcc -o test_rtc test_rtc.c rtc.c -lwiringPi
 
 *******************************************************/
 
@@ -12,12 +12,29 @@ compile: with rtc.c && -lwiringPi
 
 #include "rtc.h"
 
-// static uint8_t  second  =	0Xb1;
-// static uint8_t	minute	=	0X01;
-// static uint8_t	hour 	=	0Xd3;
-// static uint8_t	day 	=	0Xa5;
-// static uint8_t	month 	=	0Xb6;
-// static uint8_t	year 	=	0Xc7;
+int main(void)
+{
+
+  uint8_t address = 22;  
+  uint8_t data[32]  ;
+  uint8_t bytes = 0x80;
+  rtc_init();
+  //clock_set();
+  //write_rtc(address, data);
+  set_time_rtc(address, bytes);
+  read_rtc(address, data);
+
+
+  return 0;
+}
+
+/****************************** bit masking time **********************/
+// static uint8_t  second  =  0Xb1;
+// static uint8_t minute  = 0X01;
+// static uint8_t hour  = 0Xd3;
+// static uint8_t day   = 0Xa5;
+// static uint8_t month   = 0Xb6;
+// static uint8_t year  = 0Xc7;
 
 
 // const char *byte_to_binary(int x)
@@ -31,12 +48,14 @@ compile: with rtc.c && -lwiringPi
 
 // const int mask(char byte)
 // {
-// 	uint8_t mask = 0x0f;   // 00001111b
-//   	uint8_t value = byte;  // 01010101b
-//  	uint8_t result = mask & value;
-//  	return result;
+//  uint8_t mask = 0x0f;   // 00001111b
+//    uint8_t value = byte;  // 01010101b
+//    uint8_t result = mask & value;
+//    return result;
 //}
 
+<<<<<<< HEAD
+=======
 int main(void)
 {
   uint8_t address = 22;  
@@ -50,6 +69,7 @@ int main(void)
 }
 
 
+>>>>>>> 2c7f600679dedd788216af227224d5508053c851
 
 
   /****************************** testing time **********************/
