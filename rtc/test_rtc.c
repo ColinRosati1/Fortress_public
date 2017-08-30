@@ -1,115 +1,37 @@
-
 /*******************************************************
 test_rtc.c does read and wrties to Real Time Clock over SPI
 data sheet: http://www.mouser.com/ds/2/389/m41t93-955030.pdf
-
 compile with:  gcc -o test_rtc test_rtc.c rtc.c -lwiringPi
-
 *******************************************************/
-
 #include <stdio.h>      /* printf */
 #include <string.h>     /* strcat */
 #include <stdint.h>
-
 #include "rtc.h"
 
-int main(void)
+int main()
 {
-
-  uint8_t address = 22;  
+  uint8_t address = 4;  
   uint8_t data[32]  ;
   uint8_t bytes = 0x80;
   rtc_init();
-  //clock_set();
-  //write_rtc(address, data);
-  set_time_rtc(address, bytes);
-  read_rtc(address, data);
+  struct rtc_time tm;
+  // {
+  //   uint8_t tm_sec  = 28;
+  //   uint8_t tm_min  = 9;
+  //   uint8_t tm_hour = 12;
+  //   uint8_t tm_mday = 28;
+  //   uint8_t tm_wday = 3;
+  //   uint8_t tm_mon  = 8;
+  //   uint8_t tm_year = 17;
+  // } tm;
 
 
-  return 0;
-}
-
-/****************************** bit masking time **********************/
-// static uint8_t  second  =  0Xb1;
-// static uint8_t minute  = 0X01;
-// static uint8_t hour  = 0Xd3;
-// static uint8_t day   = 0Xa5;
-// static uint8_t month   = 0Xb6;
-// static uint8_t year  = 0Xc7;
-
-
-// const char *byte_to_binary(int x)
-// {
-//     static char b[9];
-//     b[0] = '\0';
-//     int z;
-//     for (z = 128; z > 0; z >>= 1){ strcat(b, ((x & z) == z) ? "1" : "0");}
-//     return b;
-// }
-
-// const int mask(char byte)
-// {
-//  uint8_t mask = 0x0f;   // 00001111b
-//    uint8_t value = byte;  // 01010101b
-//    uint8_t result = mask & value;
-//    return result;
-//}
-
-<<<<<<< HEAD
-=======
-int main(void)
-{
-  uint8_t address = 22;  
-  char data[32]  ;
-  rtc_init();
-  clock_set();
-  write_rtc(address, data);
+  // write_rtc(address, data);
+  
+  //set_time_rtc(address, &tm);
+  get_time_rtc(address, &tm);
   //read_rtc(address, data);
-
+  
   return 0;
 }
 
-
->>>>>>> 2c7f600679dedd788216af227224d5508053c851
-
-
-  /****************************** testing time **********************/
-	//int  second  =	55;
-    // uint8_t  second  =	0Xb3;
-    // 	uint8_t	minute	=	0X00;
-    // uint8_t	hour 	=	0Xd3;
-    // uint8_t	day 	=	0Xa5;
-    // uint8_t	month 	=	0Xb6;
-    // uint8_t	year 	=	0Xc7;
-    // uint8_t value;
-
-  // uint8_t mask = 0x0f;   // 00001111b
-  //  	uint8_t value = 0xa6;  // 01010101b
-  //   	uint8_t result = mask & value;
-  //   	printf("%s\n", result);
-
-  //    /* byte to binary string */
-  //    printf("Double mask : %02d, Value: %02d, Result %02d\n", mask, value, result);
-  //    printf("%s\n", byte_to_binary(result));
-    // printf("%s\n", byte_to_binary(value));
-
-  //printf("TIME\n Year %s : Month %s : Day %s :\n Hour %s : Min %s : Sec %s\n",byte_to_binary(0Xc4),byte_to_binary(month),byte_to_binary(0Xd3),byte_to_binary(02),byte_to_binary(18),byte_to_binary(55));
-     	// printf("TIME\n Year %s",byte_to_binary(year));
-     	// printf(" Month %s ",byte_to_binary(month));
-     	// printf(" Day %s ",byte_to_binary(day));
-     	// printf(" hour %s ",byte_to_binary(hour));
-     	// printf(" minute %s ",byte_to_binary(minute));
-     	// printf(" second %s \n",byte_to_binary(second));
-
-     	// printf("Mask and Shift bits\n");
- 	// uint8_t mask = 0x0f;   // 00001111b
-  // 	value = *byte_to_binary(year);  // 01010101b
- 	// uint8_t result = mask & value;
-
-  // 	printf("year %04d\n",result);
-
- 	//printf("year %s\n", mask(year));
-
-
-//     return 0;
-// }
