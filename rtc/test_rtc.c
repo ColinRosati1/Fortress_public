@@ -1,4 +1,3 @@
-
 /*******************************************************
 test_rtc.c does read and wrties to Real Time Clock over SPI
 data sheet: http://www.mouser.com/ds/2/389/m41t93-955030.pdf
