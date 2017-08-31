@@ -3,7 +3,9 @@
 #ifndef _RTC_H_
 #define _RTC_H_
 
-typedef struct rtc_time
+struct rtc_time *tm;
+
+struct rtc_time
 {
 	uint8_t tm_sec;
 	uint8_t tm_min;
@@ -12,8 +14,11 @@ typedef struct rtc_time
 	uint8_t tm_wday;
 	uint8_t tm_mon;
 	uint8_t tm_year;
-}tm;
- 
+		
+};
+
+
+
 void rtc_init();
 int read_time();
 void clock_set();
