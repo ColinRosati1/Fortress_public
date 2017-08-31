@@ -46,6 +46,8 @@ TODO Network sync Time
 TODO load rtc-m41t93.ko kernal with modprobe or enable at boot in config file, or added int /etc/rc.local
     sudo modprobe rtc-m41t93 , check its loaded with lsmod
 
+
+http://www.sciencegizmo.com.au/?p=137 follow this, i almost have it working
 *****************************************************************************
 ****************************  Libraries  *************************************************/
 
@@ -293,6 +295,26 @@ void set_time_rtc(uint8_t address, struct rtc_time *tm)
 
 }
 
+void sync_rtc(uint8_t address)
+{
+  struct rtc_time tm;
+  tm.tm_sec  = 28;
+  tm.tm_min  = 9;
+  tm.tm_hour = 12;
+  tm.tm_mday = 28;
+  tm.tm_wday = 3;
+  tm.tm_mon  = 8;
+  tm.tm_year = 17;
+
+  data[M41T93_REG_SSEC]       = 0;
+  data[M41T93_REG_ST_SEC]     = BIN2BCD(tm->tm_sec);
+  data[M41T93_REG_MIN]        = BIN2BCD(tm->tm_min);
+  data[M41T93_REG_CENT_HOUR]  = BIN2BCD(tm->tm_hour) | ((tm->tm_year/100-1) << 6);
+  data[M41T93_REG_DAY]        = BIN2BCD(tm->tm_mday);
+  data[M41T93_REG_WDAY]       = BIN2BCD(tm->tm_mday + 1);
+  data[M41T93_REG_MON]        = BIN2BCD(tm->tm_mon + 1);
+  data[M41T93_REG_YEAR]       = BIN2BCD(tm->tm_year % 100);
+}
 
 void alarm()
 {
