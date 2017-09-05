@@ -10,10 +10,7 @@ compile with:  gcc -o test_rtc test_rtc.c rtc.c -lwiringPi
 
 int main()
 {
-  uint8_t address = 5;  
-  uint8_t data[32]  ;
-  uint8_t bytes = 0x80;
-  rtc_init();
+  
    struct rtc_time 
   {
     uint8_t tm_sec ;
@@ -25,26 +22,12 @@ int main()
     uint8_t tm_year ;
     struct rtc_time *tm;
   } ;
-  struct rtc_time *tmptr;
-  struct rtc_time tm;
-  tm.tm_sec  = 28;
-  tm.tm_min  = 9;
-  tm.tm_hour = 12;
-  tm.tm_mday = 28;
-  tm.tm_wday = 3;
-  tm.tm_mon  = 8;
-  tm.tm_year = 17;
-  tmptr = &tm;
+    
+  uint8_t address = 5;  
 
-  // struct rtc_time *tmptr;
-  // tmptr = &tm;
-
-  // write_rtc(address, data);
-  
-  set_time_rtc(address, tmptr);
-  //get_time_rtc(address, &tm);
-  //read_rtc(address, data);
-  
+  rtc_init();
+  rtc_write_time(address, &tm);
+  rtc_read_time(address, &tm);
   return 0;
 }
 
