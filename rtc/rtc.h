@@ -18,7 +18,7 @@ struct rtc_time tm;
 
 void rtc_init();
 
-void get_time_rtc(uint8_t address, struct rtc_time *tm);
+void rtc_read_time(uint8_t address, struct rtc_time *tm);
 void rtc_write_time(uint8_t address, struct rtc_time *tm);
 
 
