@@ -6,28 +6,22 @@ compile with:  gcc -o test_rtc test_rtc.c rtc.c -lwiringPi
 #include <stdio.h>      /* printf */
 #include <string.h>     /* strcat */
 #include <stdint.h>
+#include <inttypes.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
 #include "rtc.h"
 
-int main()
+int main(int argc, char **argv)
 {
-  
-   struct rtc_time 
-  {
-    uint8_t tm_sec ;
-    uint8_t tm_min ;
-    uint8_t tm_hour;
-    uint8_t tm_mday ;
-    uint8_t tm_wday ;
-    uint8_t tm_mon  ;
-    uint8_t tm_year ;
-    struct rtc_time *tm;
-  } ;
-    
-  uint8_t address = 5;  
+  uint8_t address = 1; 
 
   rtc_init();
-  rtc_write_time(address, &tm);
-  rtc_read_time(address, &tm);
+  rtc_sync(address, &rtc_ptr);
+  rtc_read_time(address, &rtc_ptr, sizeof(rtc_ptr));
+  // rtc_write_time(address, &rtc_ptr);
+  // rtc_read_time(address, &rtc_ptr);
   return 0;
 }
 
