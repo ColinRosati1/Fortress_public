@@ -6,8 +6,9 @@
 struct tm rtc_ptr;
 
 void rtc_init();
-void rtc_read_time(uint8_t address, struct tm *rtc_ptr, int timepackage);
-void rtc_write_time(uint8_t address, struct tm *rtc_ptr);
-void rtc_sync(uint8_t address, struct tm *rtc_ptr);
+void rtc_read_time(uint8_t address, struct tm *rtc_ptr, int ptr_size);
+void rtc_sync(uint8_t address, struct tm *rtc_ptr, int ptr_size);
+void rtc_write_time(uint8_t address, struct tm *rtc_ptr, int ptr_size);
+
 
 #endif
