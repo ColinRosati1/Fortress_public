@@ -11,6 +11,7 @@ compile with:  gcc -o test_rtc test_rtc.c rtc.c -lwiringPi
 int main()
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
   uint8_t address = 22;  
   uint8_t data[32]  ;
   uint8_t bytes = 0x80;
@@ -94,25 +95,41 @@ int main()
 // }
 =======
   uint8_t address = 4;  
+=======
+  uint8_t address = 5;  
+>>>>>>> ee40c4cc72950afb56362280205623ae8c3b17c8
   uint8_t data[32]  ;
   uint8_t bytes = 0x80;
   rtc_init();
+   struct rtc_time 
+  {
+    uint8_t tm_sec ;
+    uint8_t tm_min ;
+    uint8_t tm_hour;
+    uint8_t tm_mday ;
+    uint8_t tm_wday ;
+    uint8_t tm_mon  ;
+    uint8_t tm_year ;
+    struct rtc_time *tm;
+  } ;
+  struct rtc_time *tmptr;
   struct rtc_time tm;
-  // {
-  //   uint8_t tm_sec  = 28;
-  //   uint8_t tm_min  = 9;
-  //   uint8_t tm_hour = 12;
-  //   uint8_t tm_mday = 28;
-  //   uint8_t tm_wday = 3;
-  //   uint8_t tm_mon  = 8;
-  //   uint8_t tm_year = 17;
-  // } tm;
+  tm.tm_sec  = 28;
+  tm.tm_min  = 9;
+  tm.tm_hour = 12;
+  tm.tm_mday = 28;
+  tm.tm_wday = 3;
+  tm.tm_mon  = 8;
+  tm.tm_year = 17;
+  tmptr = &tm;
 
+  // struct rtc_time *tmptr;
+  // tmptr = &tm;
 
   // write_rtc(address, data);
   
-  //set_time_rtc(address, &tm);
-  get_time_rtc(address, &tm);
+  set_time_rtc(address, tmptr);
+  //get_time_rtc(address, &tm);
   //read_rtc(address, data);
   
   return 0;
