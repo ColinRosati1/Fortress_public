@@ -6,10 +6,16 @@ compile with:  gcc -o test_rtc test_rtc.c rtc.c -lwiringPi
 #include <stdio.h>      /* printf */
 #include <string.h>     /* strcat */
 #include <stdint.h>
+#include <inttypes.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
 #include "rtc.h"
 
 int main()
 {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
   uint8_t address = 22;  
@@ -122,17 +128,21 @@ int main()
   tm.tm_mon  = 8;
   tm.tm_year = 17;
   tmptr = &tm;
+=======
+  char command_buf[2][32];
+  uint8_t address = 10; 
+>>>>>>> b46232db27205c9f77f95bff09c203ef1f683b29
 
-  // struct rtc_time *tmptr;
-  // tmptr = &tm;
+  rtc_init();
 
-  // write_rtc(address, data);
-  
-  set_time_rtc(address, tmptr);
-  //get_time_rtc(address, &tm);
-  //read_rtc(address, data);
-  
-  return 0;
+  rtc_read_time(address, &rtc_ptr, sizeof(rtc_ptr));
+  rtc_sync(address, &rtc_ptr, sizeof(rtc_ptr));
+  rtc_read_time(address, &rtc_ptr, sizeof(rtc_ptr));
+   printf("\nprinting command_buf time ()      \nTIME %d %d %d:%d:%d %d\n",command_buf[1][6],command_buf[1][5], command_buf[1][3], command_buf[1][2], command_buf[1][1], command_buf[1][7]);
+ 
+  // rtc_write_time(address, command_buf, sizeof(command_buf), &rtc_ptr);
+  // rtc_read_time(address, command_buf, sizeof(command_buf), &rtc_ptr);
+  // return 0;
 }
 
 >>>>>>> c2aa233229e370e1212bfca75d73534fd018758d

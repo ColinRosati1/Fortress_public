@@ -2,41 +2,9 @@
 //real time clock this has the read write functions
 // data sheet: http://www.mouser.com/ds/2/389/m41t93-955030.pdf
 // supports SPI mode 0
-
- possibly needs a lithion ion battery. TEST
-
 Functions : 
-  non-volatile time-of-day clock/calendar,
-  alarm
-  interrupt, 
-  watchdog timer, 
-  programmable 8-bit counter, 
-  square wave outputs
-
-After power-on, CS1 (E) is held low. required prior to the start of any operation
-
-A typical power-up flow is to read the time of last access, then clear the HT bit, then read the
-current time. 
-
-
-  // binary coded decimal (BCD) format
-  //read the time, frequency, alarms, flags
-  //read from address and bit 
-  //address 00H - 07H for time
-  // 08H for digital calibration
-  // 09H Watch dog
-  // 0AH - 0EH alarms
-  // 0FH Flags
-  // 10H Timer value
-  // 11H Timer control
-  // 12H Alanlog calibration
-  // 13H Square Wave
-  // 14H - 18H Alarms 2
-  // 19H - 1FH SRAM
-
-<<<<<<< HEAD
-TODO Write Time
-TODO Network sync Time
+  time-of-day clock/calendar
+  write time
 
 <<<<<<< HEAD
 	https://github.com/google/kmsan/blob/master/drivers/rtc/rtc-m41t93.c this is a good resource same rtc chip
@@ -44,17 +12,10 @@ TODO Network sync Time
   https://github.com/google/kmsan/blob/master/drivers/rtc/rtc-m41t93.c this is a good resource same rtc chip
 >>>>>>> c2aa233229e370e1212bfca75d73534fd018758d
 
-  https://github.com/mxgxw/MFRC522-python/blob/master/MFRC522.py reasource in python with similar chip
+/etc/default/hwclock make sure rtc is enabled
 
-
-TODO load rtc-m41t93.ko kernal with modprobe or enable at boot in config file, or added int /etc/rc.local
-    sudo modprobe rtc-m41t93 , check its loaded with lsmod
-
-
-http://www.sciencegizmo.com.au/?p=137 follow this, i almost have it working
-*****************************************************************************
+// connect a ntp server???
 ****************************  Libraries  *************************************************/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -64,9 +25,13 @@ http://www.sciencegizmo.com.au/?p=137 follow this, i almost have it working
 #include <inttypes.h>
 #include <linux/kernel.h>
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> c2aa233229e370e1212bfca75d73534fd018758d
+=======
+#include <time.h> // for time sync 
+>>>>>>> b46232db27205c9f77f95bff09c203ef1f683b29
 #include "rtc.h"
 
 /**************************** GLOBALS *************************************************/
@@ -91,24 +56,20 @@ http://www.sciencegizmo.com.au/?p=137 follow this, i almost have it working
 #define DIGITAL_CALIB 0X08    // digital callibration register
 #define ANALOG_CALIB  0X12    // analog callibration register
 
-#define M41T93_REG_SSEC      0
-#define M41T93_REG_ST_SEC    1
-#define M41T93_REG_MIN       2
-#define M41T93_REG_CENT_HOUR 3
-#define M41T93_REG_WDAY      4
-#define M41T93_REG_DAY       5
-#define M41T93_REG_MON       6
-#define M41T93_REG_YEAR      7
-
-// static int  second  = 0Xe7;
-// static int  minute  = 0Xc2;
-// static int  hour  = 0Xd3;
-// static int  day   = 0Xa5;
-// static int  month   = 0Xb6;
-// static int  year  = 0Xc7;
+#define M41T93_REG_SSEC      0//0
+#define M41T93_REG_ST_SEC    1//0X01
+#define M41T93_REG_MIN       2//0X02
+#define M41T93_REG_CENT_HOUR 3//0X03
+#define M41T93_REG_WDAY      4//0X04
+#define M41T93_REG_DAY       5//0X05
+#define M41T93_REG_MON       6//0X06
+#define M41T93_REG_YEAR      7//0X07
 
 #define BCD2BIN(val) (((val)&15) + ((val)>>4)*10)
 #define BIN2BCD(val) ((((val)/10)<<4) + (val)%10)
+
+struct tm rtc_tm;
+struct tm rtc_ptr;
 
 /*******************************************************
 rtc_setup initializes pins for reading and writing
@@ -129,9 +90,9 @@ void rtc_init()
 
   //clear the stop bit to 0
   char command_buf[3];
-    memset(command_buf, 0, sizeof(command_buf));
-    command_buf[2] = STP_BIT << 7; // make sure sets stop bit is set to 0
-    wiringPiSPIDataRW (SPI_CHAN, command_buf,(command_buf + 3));
+  memset(command_buf, 0, sizeof(command_buf));
+  command_buf[2] = STP_BIT << 7; // make sure sets stop bit is set to 0
+  wiringPiSPIDataRW (SPI_CHAN, command_buf,(command_buf + 3));
 }
 
 /*******************************************************
@@ -146,10 +107,12 @@ void rtc_halt_clear()
 }
 
 /*******************************************************
-read_rtc readz the clock time 
+binary_conversion
+raccepts an int and returns a byte
 *******************************************************/
-int read_rtc(int address, uint8_t *data)
+int binary_conversion(int num)
 {
+<<<<<<< HEAD
 <<<<<<< HEAD
 	//register 1 - 8 reads: 00h(1)-mircosec, 01h(2)-mircosec, 02h(3)-min, 03h(4)-hour, 04h(5)-day/week, 05h(6)-day/month, 06h(7)-month, 07(8)-year  
 	  char command_buf[CLK_SIZE];
@@ -171,9 +134,17 @@ int read_rtc(int address, uint8_t *data)
     command_buf[0] = address |  RTC_READ << 7; // read bit is 0 then addr for remain 7 bits
     int i;
     for(i = 0 ; i < 5000; i ++)
+=======
+    if (num == 0)
+>>>>>>> b46232db27205c9f77f95bff09c203ef1f683b29
     {
-      wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));
+      return 0;
     }
+    else
+    {
+      return (num % 2) + 10 * binary_conversion(num / 2);
+    }
+<<<<<<< HEAD
   printf("Address(%x) %x  %x  %x  %x  %x  %x  %x \n", command_buf[0],command_buf[1],command_buf[2],command_buf[3], command_buf[4], command_buf[5], command_buf[6], command_buf[7],command_buf[8]);
   return 0;
     memcpy(data, &command_buf[2], CLK_SIZE);
@@ -205,92 +176,66 @@ writing anywhere in 00h - 07h registers will result in an update of the RTC coun
 >>>>>>> c2aa233229e370e1212bfca75d73534fd018758d
 
 int binary_conversion(int num)
+=======
+}
+
+int binary_conversion_char(char num)
+>>>>>>> b46232db27205c9f77f95bff09c203ef1f683b29
 {
     if (num == 0)
     {
-        return 0;
+      return 0;
     }
     else
     {
-        printf("bin conversion: %d\n", num);
-        return (num % 2) + 10 * binary_conversion(num / 2);
+      return (num % 2) + 10 * binary_conversion(num / 2);
     }
-
-}
-
-const int mask(char byte)
-{
-   printf("value %d\n",  binary_conversion(byte));
-   uint8_t mask = 0x0f;   // 00001111b
-   uint8_t value =  binary_conversion(byte);  // 01010101b
-   uint8_t result = mask & value;
-   printf("result %d\n", binary_conversion(result));
-   return result;
-}
-
-void get_time_rtc(uint8_t address, struct rtc_time *tm)
-{
-  uint8_t command_buf[32];
-  command_buf[0] = address |  RTC_READ << 7;
-  int century_after_1900;
- 
-  /* Check status of clock. Two states must be considered:
-     1. halt bit (HT) is set: the clock is running but update of readout
-        registers has been disabled due to power failure. This is normal
-        case after poweron. Time is valid after resetting HT bit.
-     2. oscillator fail bit (OF) is set: time is invalid.
-  */
-  
-  // tm->tm_sec  = BCD2BIN(command_buf[M41T93_REG_ST_SEC]);
-  // tm->tm_min  = BCD2BIN(command_buf[M41T93_REG_MIN]);
-  // tm->tm_hour = BCD2BIN(command_buf[M41T93_REG_CENT_HOUR] & 0x3f);
-  // tm->tm_mday = BCD2BIN(command_buf[M41T93_REG_DAY]);
-  // tm->tm_mon  = BCD2BIN(command_buf[M41T93_REG_MON]) - 1;
-  // tm->tm_wday = BCD2BIN(command_buf[M41T93_REG_WDAY] & 0x0f) - 1;
-  // century_after_1900 = (command_buf[M41T93_REG_CENT_HOUR] >> 6) + 1;
-  // tm->tm_year = BCD2BIN(command_buf[M41T93_REG_YEAR]) + century_after_1900 * 100;
-
-   wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));    
-  printf("Get Time\n");
-  printf("sec: %d | min: %d | hour: %d | day: %d | month: %d | year: %d\n", binary_conversion(tm->tm_sec),  binary_conversion(tm->tm_min), binary_conversion(tm->tm_hour), binary_conversion(tm->tm_mday), binary_conversion(tm->tm_mon), binary_conversion(tm->tm_year));  
-  printf("tm : %d\n", tm);
-  printf("tm_sec : %d\n", tm->tm_sec);
-  printf("tm_min : %d\n", tm->tm_min);
-  printf("tm_hour : %d\n", tm->tm_hour);
-  printf("tm_day/month : %d\n", tm->tm_mday);
-  printf("tm_day/week : %d\n", tm->tm_wday);
-  printf("tm_month : %d\n", tm->tm_mon);
-  printf("tm_year : %d\n\n", tm->tm_year);
-
-  printf("bin tm_sec : %d\n", BCD2BIN(command_buf[M41T93_REG_ST_SEC]));
-  printf("bin tm_min : %d\n", BCD2BIN(command_buf[M41T93_REG_MIN]));
-  printf("bin tm_hour : %d\n", BCD2BIN(command_buf[M41T93_REG_CENT_HOUR] & 0x3f));
-  printf("bin tm_day/month : %d\n", BCD2BIN(command_buf[M41T93_REG_DAY]));
-  printf("bin tm_day/week : %d\n", BCD2BIN(command_buf[M41T93_REG_WDAY] & 0x0f) - 1);
-  printf("bin tm_month : %d\n", tm->tm_mon);
-  printf("bin tm_year : %d\n\n", BCD2BIN(command_buf[M41T93_REG_YEAR]) + century_after_1900 * 100);
-
-  printf("buf tm_sec : %d\n", command_buf[M41T93_REG_ST_SEC]);
-  printf("buf tm_min : %d\n", command_buf[M41T93_REG_MIN]);
-  printf("buf tm_hour : %d\n", command_buf[M41T93_REG_CENT_HOUR]);
-  printf("buf tm_day/month : %d\n", command_buf[M41T93_REG_DAY]);
-  printf("buf tm_day/week : %d\n", command_buf[M41T93_REG_WDAY]);
-  printf("buf tm_month : %d\n", command_buf[M41T93_REG_MON]);
-  printf("buf tm_year : %d\n", command_buf[M41T93_REG_YEAR]);
-
-  printf("global sec : %d\n", command_buf[M41T93_REG_ST_SEC]);
-  printf("global tm_min : %d\n", command_buf[M41T93_REG_MIN]);
-  printf("global tm_hour : %d\n", command_buf[M41T93_REG_CENT_HOUR]);
-  printf("global tm_day/month : %d\n", command_buf[M41T93_REG_DAY]);
-  printf("global tm_day/week : %d\n", command_buf[M41T93_REG_WDAY]);
-  printf("global tm_month : %d\n", command_buf[M41T93_REG_MON]);
-  printf("global tm_year : %d\n", command_buf[M41T93_REG_YEAR]);
-
 }
 
 /*******************************************************
-set_time_rtc sets the clock time
+mask
+accepts a byte                                01010101
+returns a result with only the last 4 bits.   00000101
 *******************************************************/
+const int mask(char byte)
+{
+   uint8_t mask = 0x0f;   // 00001111b
+   uint8_t value =  binary_conversion(byte);  // 01010101b
+   uint8_t result = mask & value;
+   return result;
+}
+
+/*******************************************************
+rtc_read_time
+reads the clock time. pass the address and the tm reference
+*******************************************************/
+void rtc_read_time(uint8_t address, struct tm *rtc_ptr, int ptr_size)
+// void rtc_read_time(uint8_t address, char command_buf[1][32], int buf_size, struct tm *rtc_ptr)
+{
+  char command_buf[1][31];
+  memset(command_buf, 0, sizeof(command_buf)); // wipe all buf to 0, so nothing is written
+  command_buf[0][0] = address |  RTC_READ << 7;
+  memcpy(command_buf, rtc_ptr, sizeof(rtc_ptr)); 
+
+  wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));
+   memcpy(rtc_ptr, command_buf, sizeof(rtc_ptr));  
+  // printf ("Current local time and date: %s", asctime(rtc_ptr));
+   
+  printf("\nprinting command_buf time from rtc_read_time\nTIME %d %d %d:%d:%d %d\n",command_buf[1][6],command_buf[1][5], command_buf[1][3], command_buf[1][2], command_buf[1][1], command_buf[1][7]);
+
+  printf("sec = %d\n",rtc_ptr->tm_sec)  ;
+  printf("min = %d\n",rtc_ptr->tm_min)  ;
+  printf("hour = %d\n",rtc_ptr->tm_hour)  ;
+  printf("day = %d\n",rtc_ptr->tm_mday)  ;
+  printf("month = %d\n",rtc_ptr->tm_mon + 1)  ;
+  printf("year = %d\n",rtc_ptr->tm_year)  ;
+}
+
+
+/*******************************************************
+rtc_write_time writes the clock time. pass the address and the tm reference
+*******************************************************/
+<<<<<<< HEAD
 <<<<<<< HEAD
 void set_time_rtc(uint8_t address, uint8_t data)
 { 
@@ -365,62 +310,141 @@ void set_time_rtc(uint8_t address, struct rtc_time *tm)
 
 =======
 >>>>>>> c2aa233229e370e1212bfca75d73534fd018758d
+=======
+void rtc_write_time(uint8_t address, struct tm *rtc_ptr, int ptr_size)
+// void rtc_write_time(uint8_t address, char command_buf[2][32], int buf_size, struct tm *rtc_ptr)
+{ 
+  char command_buf[1][31];
+  printf("\nprinting command_buf time ()      \nTIME %d %d %d:%d:%d %d\n",rtc_ptr->tm_mon,rtc_ptr->tm_mday, rtc_ptr->tm_hour, rtc_ptr->tm_min, rtc_ptr->tm_sec, rtc_ptr->tm_year);
+  struct tm *ptr_time;
+  ptr_time = (struct tm *) malloc (sizeof(struct tm));
+  printf("Enter a time expressed as hh:mm:ss format.\n");
+  // char input_time;
+  // input_time = scanf("%02d:%02d:%02d", &ptr_time->tm_hour, &ptr_time->tm_min, &ptr_time->tm_sec);
+  scanf("%d:%d:%d", &ptr_time->tm_hour, &ptr_time->tm_min, &ptr_time->tm_sec);
+  // scanf("%d:%d:%d", &rtc_ptr->tm_hour, &rtc_ptr->tm_min, &rtc_ptr->tm_sec);
+
+  // *rtc_ptr = *ptr_time;
+
+  command_buf[0][0] = address |  RTC_WRITE << 7;
+  uint8_t * data; /* data byte */
+  // data = &command_buf[1][0]; /* ptr to first data byte */
+  // data[M41T93_REG_SSEC]       = 0;
+  // data[M41T93_REG_ST_SEC]     = BIN2BCD(rtc_ptr->tm_sec);
+  // data[M41T93_REG_MIN]        = BIN2BCD(rtc_ptr->tm_min);
+  // data[M41T93_REG_CENT_HOUR]  = BIN2BCD(rtc_ptr->tm_hour) | ((rtc_ptr->tm_year/100-1) << 6);
+  // data[M41T93_REG_DAY]        = BIN2BCD(rtc_ptr->tm_mday);
+  // data[M41T93_REG_WDAY]       = BIN2BCD(rtc_ptr->tm_mday + 1);
+  // data[M41T93_REG_MON]        = BIN2BCD(rtc_ptr->tm_mon + 1);
+  // data[M41T93_REG_YEAR]       = BIN2BCD(rtc_ptr->tm_year % 100);
+  command_buf[1][1]        = ptr_time->tm_sec  ;
+  command_buf[1][2]        = ptr_time->tm_min  ;
+  command_buf[1][3]        = ptr_time->tm_hour ;
+  command_buf[1][5]        = ptr_time->tm_mday ;
+  command_buf[1][6]        = ptr_time->tm_mon + 1 ;
+  command_buf[1][7]        = ptr_time->tm_year % 100;
+
+  // printf("\nprinting command_buf[array]            : buf[0]%d, buf[1]%d\nbuf[1][1] sec  : %d\nbuf[1][2] min  : %d\nbuf[1][3] hour : %d\nbuf[1][5] day  : %d\nbuf[1][6] mon  : %d\nbuf[1][7] year : %d\n", command_buf[0],command_buf[1], command_buf[1][1], command_buf[1][2], command_buf[1][3], command_buf[1][5], command_buf[1][6], command_buf[1][7]);
+  // printf("\nprinting command_buf binary: \nW/R & Address buf[0]%d\nbuf[1][1] sec  : %d\nbuf[1][2] min  : %d\nbuf[1][3] hour : %d\nbuf[1][5] day  : %d\nbuf[1][6] mon  : %d\nbuf[1][7] year : %d\n", binary_conversion_char(*command_buf[0]), binary_conversion_char(command_buf[1][1]), binary_conversion_char(command_buf[1][2]), binary_conversion_char(command_buf[1][3]), binary_conversion_char(command_buf[1][5]), binary_conversion_char(command_buf[1][6]), binary_conversion_char(command_buf[1][7]));
+
+  wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));  
+  printf("\nWrite time\n");
+>>>>>>> b46232db27205c9f77f95bff09c203ef1f683b29
 }
 
-void sync_rtc(uint8_t address)
+/*******************************************************
+rtc_sync gets time from time library calls and writes it to the clock time. pass reference to tm trc_ptr
+*******************************************************/
+void rtc_sync(uint8_t address, struct tm *rtc_ptr, int ptr_size)
+// void rtc_sync(uint8_t address, char command_buf[2][32], int buf_size, struct tm *rtc_ptr)
 {
-  struct rtc_time tm;
-  tm.tm_sec  = 28;
-  tm.tm_min  = 9;
-  tm.tm_hour = 12;
-  tm.tm_mday = 28;
-  tm.tm_wday = 3;
-  tm.tm_mon  = 8;
-  tm.tm_year = 17;
+  // get time from time library pass it to our rtc_ptr by reference to be accessed globally
+  time_t time_raw_format;
+  struct tm * ptr_time;
+  time ( &time_raw_format );
+  ptr_time = localtime ( &time_raw_format );
+  *rtc_ptr = *ptr_time;
+  printf ("Current local time and date: %s", asctime(rtc_ptr));
+  
+  char command_buf[1][31];
+  command_buf[0][0] = address |  RTC_WRITE << 7;
+  uint8_t * data; /* data byte */
+  data = &command_buf[1][0]; /* ptr to first data byte */
 
-  data[M41T93_REG_SSEC]       = 0;
-  data[M41T93_REG_ST_SEC]     = BIN2BCD(tm->tm_sec);
-  data[M41T93_REG_MIN]        = BIN2BCD(tm->tm_min);
-  data[M41T93_REG_CENT_HOUR]  = BIN2BCD(tm->tm_hour) | ((tm->tm_year/100-1) << 6);
-  data[M41T93_REG_DAY]        = BIN2BCD(tm->tm_mday);
-  data[M41T93_REG_WDAY]       = BIN2BCD(tm->tm_mday + 1);
-  data[M41T93_REG_MON]        = BIN2BCD(tm->tm_mon + 1);
-  data[M41T93_REG_YEAR]       = BIN2BCD(tm->tm_year % 100);
-}
+  // data[M41T93_REG_SSEC]       = 0;
+  // data[M41T93_REG_ST_SEC]     = BIN2BCD(rtc_ptr->tm_sec);
+  // data[M41T93_REG_MIN]        = BIN2BCD(rtc_ptr->tm_min);
+  // data[M41T93_REG_CENT_HOUR]  = BIN2BCD(rtc_ptr->tm_hour) | ((rtc_ptr->tm_year/100-1) << 6);
+  // data[M41T93_REG_DAY]        = BIN2BCD(rtc_ptr->tm_mday);
+  // data[M41T93_REG_WDAY]       = BIN2BCD(rtc_ptr->tm_mday + 1);
+  // data[M41T93_REG_MON]        = BIN2BCD(rtc_ptr->tm_mon + 1);
+  // data[M41T93_REG_YEAR]       = BIN2BCD(rtc_ptr->tm_year % 100);
+// printf("\nprinting command_buf time        : buf[0]%d, buf[1]%d\nTIME %d %d %d:%d:%d %d\n", command_buf[0],command_buf[1],command_buf[1][6],command_buf[1][5], command_buf[1][3], command_buf[1][2], command_buf[1][1], command_buf[1][7]);
+  
+  // data[M41T93_REG_SSEC]       = ptr_time->tm_sec       ;
+  // data[M41T93_REG_ST_SEC]     = ptr_time->tm_sec       ;
+  // data[M41T93_REG_MIN]        = ptr_time->tm_min       ;
+  // data[M41T93_REG_CENT_HOUR]  = ptr_time->tm_hour      ;
+  // data[M41T93_REG_DAY]        = ptr_time->tm_mday      ;
+  // data[M41T93_REG_WDAY]       = ptr_time->tm_mday      ;
+  // data[M41T93_REG_MON]        = ptr_time->tm_mon  + 1  ;
+  // data[M41T93_REG_YEAR]       = ptr_time->tm_year % 100;
 
-void alarm()
-{
-  // binary coded decimal (BCD) format
-}
+  uint8_t mask = 0x8f;   // 10001111b
+  uint8_t value =  binary_conversion(rtc_ptr->tm_sec);  // 01010101b
+  uint8_t tm_sec_masked_result = mask & value;
+  printf("%d\n", rtc_ptr->tm_min);
+   printf("\nprinting binary masked result: %d\n", binary_conversion_char(tm_sec_masked_result));
 
-void interrupt()
-{
+  command_buf[1][1]        = tm_sec_masked_result  ;
+  command_buf[1][2]        = rtc_ptr->tm_min  ;
+  command_buf[1][3]        = rtc_ptr->tm_hour ;
+  command_buf[1][5]        = rtc_ptr->tm_mday ;
+  command_buf[1][6]        = rtc_ptr->tm_mon + 1 ;
+  command_buf[1][7]        = rtc_ptr->tm_year % 100;
+  command_buf[1][13]       = 0;
+  
 
-}
+  // memcpy(&command_buf[1][32], rtc_ptr, ptr_size);
+  
+  // printf("\nprinting command_buf sync()            : buf[0]%d, buf[1]%d\nbuf[1][1] sec  : %d\nbuf[1][2] min  : %d\nbuf[1][3] hour : %d\nbuf[1][5] day  : %d\nbuf[1][6] mon  : %d\nbuf[1][7] year : %d\n", command_buf[0],command_buf[1], command_buf[1][1], command_buf[1][2], command_buf[1][3], command_buf[1][5], command_buf[1][6], command_buf[1][7]);
+  printf("\nprinting command_buf time ()      \nTIME %d %d %d:%d:%d %d\n",command_buf[1][6],command_buf[1][5], command_buf[1][3], command_buf[1][2], command_buf[1][1], command_buf[1][7]);
+  wiringPiSPIDataRW (SPI_CHAN, command_buf,ptr_size);  
+ }
 
-void watchdot_timer()
-{
-  // binary format
-}
+// void alarm()
+// {
+//   // binary coded decimal (BCD) format
+// }
 
-void counter()
-{
+// void interrupt()
+// {
 
-}
+// }
 
-void squarewave()
-{
-  // binary format
-}
+// void watchdot_timer()
+// {
+//   // binary format
+// }
+
+// void counter()
+// {
+
+// }
+
+// void squarewave()
+// {
+//   // binary format
+// }
 
 /*******************************************************
 analog_calib adjust internal (on-chip Cx1, Cx0) load
 capacitors for oscillator capacitance trimming. Nominally 25 pF each,
 *******************************************************/
-void analog_calib()
-{
+// void analog_calib()
+// {
 
-}
+// }
 
 /*******************************************************
 digital_calib calibrates the clock accuracy by adjusting the capacitance load
@@ -428,8 +452,8 @@ The total possible compensation is typically –93 ppm to +156 ppm
 A digital calibration register (08h) can also be used to adjust the clock counter by
 adding or subtracting a pulse at the 512 Hz divider stage.
 *******************************************************/
-void digital_calib()
-{
+// void digital_calib()
+// {
 
-}
+// }
 
