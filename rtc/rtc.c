@@ -220,7 +220,7 @@ void rtc_sync(uint8_t address, struct tm *rtc_ptr, int ptr_size)
  void rtc_ntp_time()
  {
   system("ntpdate");
-
+  system("date");
  }
 
 // void alarm()

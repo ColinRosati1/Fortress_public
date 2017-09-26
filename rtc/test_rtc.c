@@ -18,7 +18,7 @@ int main()
   uint8_t address = 10; 
 
   rtc_init();
-  // rtc_read_time(address, &rtc_ptr, sizeof(rtc_ptr));
+  rtc_read_time(address, &rtc_ptr, sizeof(rtc_ptr));
   rtc_sync(address, &rtc_ptr, sizeof(rtc_ptr));
   rtc_read_time(address, &rtc_ptr, sizeof(rtc_ptr));
   // rtc_write_time(address, &rtc_ptr, sizeof(rtc_ptr));
