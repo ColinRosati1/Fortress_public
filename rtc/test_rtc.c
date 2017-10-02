@@ -15,14 +15,12 @@ compile with:  gcc -o test_rtc test_rtc.c rtc.c -lwiringPi
 
 int main()
 {
-  uint8_t address = 10; 
-
-  rtc_init();
-  rtc_read_time(address, &rtc_ptr, sizeof(rtc_ptr));
-  rtc_sync(address, &rtc_ptr, sizeof(rtc_ptr));
-  rtc_read_time(address, &rtc_ptr, sizeof(rtc_ptr));
-  // rtc_write_time(address, &rtc_ptr, sizeof(rtc_ptr));
-  // rtc_read_time(address, &rtc_ptr, sizeof(rtc_ptr));
+  rtc_init( &rtc_ptr);
+  rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
+  rtc_sync( &rtc_ptr, sizeof(rtc_ptr));
+  rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
+  rtc_write_time( &rtc_ptr, sizeof(rtc_ptr));
+  rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
   
   return 0;
 }
