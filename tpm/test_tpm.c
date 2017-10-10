@@ -15,8 +15,9 @@ compile with:  gcc -o test_tpm test_tpm.c tpm.c -lwiringPi
 int main()
 {
 	tpm_init	( );
-	tpm_read	( );
 	tpm_write  	( );
+	tpm_read	( );
+	gpioTerminate();
 
 	return 1;
 }

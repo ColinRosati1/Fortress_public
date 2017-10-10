@@ -11,9 +11,10 @@ Functions :
 
 Dependencies ***
 *compile with -pthread ,  -lpigpio
- gcc -pthread  -o test_tpm test_tpm.c tpm-gpio.c -lpigpio 
+ gcc -pthread  -o test_tpm test_tpm.c test_tpm_pigpio.c -lpigpio 
 *make sure you have spi1 enable with correct chipselect: dtoverlay=spi1-3cs
 *check you have /dev/spidev1.2 with $ ls /dev/spidev*
+
 /****************************  Libraries  *************************************************/
 #include <stdio.h>
 #include <stdlib.h>  
@@ -28,12 +29,17 @@ Dependencies ***
 
 /**************************** GLOBALS *************************************************/
 #define TPM_CS          16    //PIGPIO uses BCM pinout 
+#define TPM_MOSI        20
+#define TPM_MISO        19
+#define TPM_SCLK        21
 #define TPM_READ        0
 #define TPM_WRITE       1
-#define SPI_CLK_SPEED   5000000 //10mhz is max, 1mhz is min
+#define SPI_CLK_SPEED   200000 
 #define SPI_CHAN        1      // spi channel 0.0 or 0.1
-#define SPI_MODE        0      // supports SPI mode 0 [CPOL = 0, CPHA = 0]
+#define SPI_MODE        3      // supports SPI mode 0 [CPOL = 0, CPHA = 0]
 
+int spi;
+int AUX_SPI;
 /*******************************************************
 rtc_setup initializes pins for reading and writing
 opens and tests SPI channel
@@ -42,16 +48,21 @@ int tpm_init()
 {
   int h;
   int fd;
-  if (gpioInitialise() < 0) return -1;
-
-   h = spiOpen(1, SPI_CLK_SPEED, 8);
-   printf("%d\n", h);
-   if (h < 0) return 2;
-   if (h == 1){
-    printf("gpio SPI1 is now open\n");
-    gpioSetMode(TPM_CS,  PI_OUTPUT);
-    gpioWrite(TPM_CS, 1) ;
+  if (gpioInitialise() < 0)
+  { 
+    fprintf(stderr, "pigpio initialisation failed.\n");
+    return -1;
   }
+
+  gpioSetMode(TPM_CS,  PI_OUTPUT);
+  gpioWrite(TPM_CS, 1) ;
+  // spi = spiOpen(SPI_CHAN, SPI_CLK_SPEED, 8); //auxiliary SPI needs to set bit 8 flag
+  printf("gpio SPI1 is now open %d\n", spi);
+   // bbSPIOpen(TPM_CS, TPM_MISO, TPM_MOSI, TPM_SCLK, SPI_CLK_SPEED, 0); //opens our spi pins
+  AUX_SPI=(1<<8);
+  spi = spiOpen(SPI_CHAN, SPI_CLK_SPEED, AUX_SPI);
+
+ 
 }
 
 /*******************************************************
@@ -60,29 +71,38 @@ reads the clock time. pass the address and the tm reference
 *******************************************************/
 void tpm_read()
 {
-  char command_buf[9];//??
-  command_buf[0]        = (char)  1  | TPM_READ << 7; //adress && RW
-  // wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf));  
-  printf("tpm_read\n");
+  char command_buf[9];
+  int i;
+  for ( i = 0; i < 9; i ++)
+  {
+    command_buf[i] = 'a';
+  }
+  int count = sizeof(command_buf);
+   printf("tpm_read\n");
+    AUX_SPI=(1<<8);
+  int spi = spiOpen(SPI_CHAN, SPI_CLK_SPEED, AUX_SPI);
+  printf("spi %d\n",spi);
+  spiRead(spi, command_buf, count);
 
   }
-
 
 /*******************************************************
 tpm_write writes the to the tpm
 ********************************************************/
 void tpm_write()
 { 
-  char command_buf[9];
-  command_buf[0]        = (char) 1  | TPM_WRITE << 7;  //adress && RW
-
-  printf("\nttpm_write\n"); 
-  char data ;
-  command_buf[1] = data["new string"];
-  // wiringPiSPIDataRW (SPI_CHAN, command_buf,sizeof(command_buf)); 
-
   
-  // digitalWrite (TPM_CS, LOW) ;
- 
+  printf("\ntpm_write\n"); 
+  char command_buf[9];
+  int i;
+  for ( i = 0; i < 9; i ++)
+  {
+    command_buf[i] = 'a';
+  }
+  int count = sizeof(command_buf);
+  // spi = spiOpen(SPI_CHAN, SPI_CLK_SPEED, AUX_SPI);
+  printf("spi %d\n",spi);
+  spiWrite(spi, command_buf, count);
+
 }
 
