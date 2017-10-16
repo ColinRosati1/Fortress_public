@@ -3,6 +3,7 @@
 // data sheet: https://www.infineon.com/dgdl/Infineon-SLB_9670_1.2-DS-v11_15-EN.pdf?fileId=5546d462525dbac401532d32465e7ec7
 OPTIGA™ TPM (Trusted Platform Module) offers a broad portfolio of standardized security controllers to protect the integrity and authenticity of embedded devices and systems. 
 With a secured key store and support for a variety of encryption algorithms, OPTIGA™ TPM security chips provide robust protection for critical data and processes through their rich functionality.
+//WiringPi library does not work with second SPI channel. Using PIGPIO 
 
 Functions : 
   tpm_init()
@@ -35,7 +36,7 @@ check you have /dev/spidev1.2 with $ ls /dev/spidev*
 rtc_setup initializes pins for reading and writing
 opens and tests SPI channel
 ********************************************************/
-void tpm_init()
+int tpm_init()
 {
   int fd;
   wiringPiSetup(); //wiringPi setups up pin mapping and Rpi's SPI devices
@@ -47,6 +48,7 @@ void tpm_init()
 
   pinMode (TPM_CS, OUTPUT);
   digitalWrite (TPM_CS, HIGH) ;
+  return 1;
 }
 
 /*******************************************************

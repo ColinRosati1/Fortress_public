@@ -2,6 +2,8 @@
 
 #ifndef _TPM_H_
 #define _TPM_H_
+
+int AuxSpiOpen 	( );
 int tpm_init	( );
 void tpm_read	( );
 void tpm_write  ( );

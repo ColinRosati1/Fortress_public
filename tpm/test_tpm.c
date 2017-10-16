@@ -17,7 +17,7 @@ int main()
 	tpm_init	( );
 	tpm_write  	( );
 	tpm_read	( );
-	gpioTerminate();
+	gpioTerminate(); 
 
 	return 1;
 }

@@ -4,7 +4,8 @@
 OPTIGA™ TPM (Trusted Platform Module) offers a broad portfolio of standardized security controllers to protect the integrity and authenticity of embedded devices and systems. 
 With a secured key store and support for a variety of encryption algorithms, OPTIGA™ TPM security chips provide robust protection for critical data and processes through their rich functionality.
 
-Functions : 
+Functions :
+  AuxSpiOpen() 
   tpm_init()
   tpm_read()
   tpm_write()
@@ -40,6 +41,17 @@ Dependencies ***
 
 int spi;
 int AUX_SPI;
+
+/*******************************************************
+AuxSpiOpen opens and initializes auxilary spi device, channel, speed
+********************************************************/
+int AuxSpiOpen(int AUX_SPI, int spi)
+{
+  AUX_SPI=(1<<8);
+  spi = spiOpen(SPI_CHAN, SPI_CLK_SPEED, AUX_SPI);
+  return spi;
+}
+
 /*******************************************************
 rtc_setup initializes pins for reading and writing
 opens and tests SPI channel
@@ -56,13 +68,9 @@ int tpm_init()
 
   gpioSetMode(TPM_CS,  PI_OUTPUT);
   gpioWrite(TPM_CS, 1) ;
-  // spi = spiOpen(SPI_CHAN, SPI_CLK_SPEED, 8); //auxiliary SPI needs to set bit 8 flag
   printf("gpio SPI1 is now open %d\n", spi);
-   // bbSPIOpen(TPM_CS, TPM_MISO, TPM_MOSI, TPM_SCLK, SPI_CLK_SPEED, 0); //opens our spi pins
-  AUX_SPI=(1<<8);
-  spi = spiOpen(SPI_CHAN, SPI_CLK_SPEED, AUX_SPI);
-
- 
+  AuxSpiOpen(AUX_SPI,spi);
+  
 }
 
 /*******************************************************
@@ -71,16 +79,16 @@ reads the clock time. pass the address and the tm reference
 *******************************************************/
 void tpm_read()
 {
+  printf("tpm_read\n");
   char command_buf[9];
   int i;
   for ( i = 0; i < 9; i ++)
   {
-    command_buf[i] = 'a';
+    command_buf[i] = '1';
   }
   int count = sizeof(command_buf);
-   printf("tpm_read\n");
-    AUX_SPI=(1<<8);
-  int spi = spiOpen(SPI_CHAN, SPI_CLK_SPEED, AUX_SPI);
+
+  AuxSpiOpen(AUX_SPI,spi);
   printf("spi %d\n",spi);
   spiRead(spi, command_buf, count);
 
@@ -97,10 +105,10 @@ void tpm_write()
   int i;
   for ( i = 0; i < 9; i ++)
   {
-    command_buf[i] = 'a';
+    command_buf[i] = 'x';
   }
   int count = sizeof(command_buf);
-  // spi = spiOpen(SPI_CHAN, SPI_CLK_SPEED, AUX_SPI);
+  AuxSpiOpen(AUX_SPI,spi);
   printf("spi %d\n",spi);
   spiWrite(spi, command_buf, count);
 
