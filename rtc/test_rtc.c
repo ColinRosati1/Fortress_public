@@ -18,9 +18,9 @@ int main()
   rtc_init( &rtc_ptr);
   rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
   rtc_sync( &rtc_ptr, sizeof(rtc_ptr));
-  rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
-  rtc_write_time( &rtc_ptr, sizeof(rtc_ptr));
-  rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
+  // rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
+  // rtc_write_time( &rtc_ptr, sizeof(rtc_ptr));
+  // rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
   
   return 0;
 }

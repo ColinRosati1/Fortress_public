@@ -10,9 +10,6 @@ Functions :
   rtc_sync()
   rtc_ntp_time()
 
-
-// connect a ntp server???
-
 /****************************  Libraries  *************************************************/
 #include <stdio.h>
 #include <stdlib.h>  
@@ -64,13 +61,13 @@ Functions :
 struct tm rtc_tm;
 struct tm rtc_ptr;
 
-/*******************************************************
-rtc_setup initializes pins for reading and writing
-opens and tests SPI channel
-*******************************************************/
 void rtc_ntp_time();
 void rtc_stop_clear();
 
+/*******************************************************
+rtc_init initializes pins for reading and writing
+opens and tests SPI channel
+*******************************************************/
 void rtc_init(struct tm *rtc_ptr)
 {
   int fd;
@@ -84,9 +81,7 @@ void rtc_init(struct tm *rtc_ptr)
   pinMode (RTC_CS, OUTPUT);
   digitalWrite (RTC_CS, HIGH) ;
   rtc_ntp_time();
-  // rtc_ntp_time();
-  // rtc_stop_clear();
-
+ 
 //initializes the time struct 
   time_t time_raw_format;
   struct tm * ptr_time;
@@ -123,14 +118,6 @@ binary_conversion
 raccepts an int and returns a byte
 *******************************************************/
 int binary_conversion(int num)
-{
-    if (num == 0)
-      return 0;
-    else
-      return (num % 2) + 10 * binary_conversion(num / 2);
-}
-
-int binary_conversion_char(char num)
 {
     if (num == 0)
       return 0;

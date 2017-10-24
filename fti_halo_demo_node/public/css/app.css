@@ -1,0 +1,97 @@
+body {
+	font-family: sans-serif;
+    background-color: #C1C6C9
+}
+ul#menu {
+    padding: 0;
+}
+ul#menu li{
+    margin: 21px 0px;
+}
+
+ul#menu li a {
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 4px 4px 0 0;
+}
+
+ul#menu li a:hover {
+    background-color: orange;
+}
+
+ul#halomenu {
+    padding: 0;
+}
+ul#halomenu li{
+    margin: 21px 0px;
+}
+
+
+ul#halomenu li a {
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 4px 4px 0 0;
+}
+
+ul#halomenu li a:hover {
+    background-color: orange;
+}
+.link{
+    background-color: #818a90;
+}
+.activenav {
+    background-color: #362C66;
+}
+td{
+    margin: 10px;
+}
+.js-plot-link-container{
+    visibility: hidden;
+}
+.menuitem{
+    width: 100%
+}
+.container{
+    width: 100%
+}
+.fortresslogo{
+    float: right;
+
+}
+.halologo{
+    float: left;
+}
+.header{
+    height: 70px;
+}
+@media only screen and (min-width: 500px){
+
+    ul#halomenu li {
+        display: inline;
+        margin: 0px;
+    }
+    ul#menu li {
+        display: inline;
+        margin: 0px;
+    }    
+}
+@media only screen and (min-width:768px){
+    
+    .container{
+        width: 600px;
+        display: table-cell;
+        padding: 0px 5px 0px 5px;
+    }
+    #content{
+        width: 1200px;
+        margin: auto
+    }
+    ul#halomenu{
+        margin-bottom: 10px;
+    }
+    ul#menu{
+        margin-bottom: 10px;
+    }    
+}
