@@ -18,6 +18,7 @@ int main()
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   uint8_t address = 22;  
   uint8_t data[32]  ;
   uint8_t bytes = 0x80;
@@ -143,6 +144,16 @@ int main()
   // rtc_write_time(address, command_buf, sizeof(command_buf), &rtc_ptr);
   // rtc_read_time(address, command_buf, sizeof(command_buf), &rtc_ptr);
   // return 0;
+=======
+  rtc_init( &rtc_ptr);
+  rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
+  rtc_sync( &rtc_ptr, sizeof(rtc_ptr));
+  // rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
+  // rtc_write_time( &rtc_ptr, sizeof(rtc_ptr));
+  // rtc_read_time( &rtc_ptr, sizeof(rtc_ptr));
+  
+  return 0;
+>>>>>>> 8c853fbfacb2adc8ae61baf71b109b0e4aa78fcf
 }
 
 >>>>>>> c2aa233229e370e1212bfca75d73534fd018758d

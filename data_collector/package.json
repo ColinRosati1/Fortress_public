@@ -1,0 +1,23 @@
+{
+  "name": "data_collector",
+  "version": "1.0.0",
+  "description": "data collector",
+  "main": "data_collector.js",
+  "scripts": {
+    "test": "blink"
+  },
+  "repository": {
+    "type": "git",
+    "url": "data_collector"
+  },
+  "keywords": [
+    "nodehs"
+  ],
+  "author": "colin",
+  "license": "ISC",
+  "dependencies": {
+    "ansi": "^0.3.1",
+    "node-red-contrib-gpio": "^0.10.0",
+    "pi-gpio": "0.0.8"
+  }
+}

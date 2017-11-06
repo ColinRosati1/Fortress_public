@@ -5,6 +5,7 @@
 
 struct tm rtc_ptr;
 
+<<<<<<< HEAD
 void rtc_init();
 <<<<<<< HEAD
 int read_time();
@@ -24,5 +25,11 @@ void rtc_sync(uint8_t address, struct tm *rtc_ptr, int ptr_size);
 void rtc_write_time(uint8_t address, struct tm *rtc_ptr, int ptr_size);
 
 >>>>>>> b46232db27205c9f77f95bff09c203ef1f683b29
+=======
+void rtc_init		(struct tm *rtc_ptr);
+void rtc_read_time	( struct tm *rtc_ptr, int ptr_size);
+void rtc_sync		( struct tm *rtc_ptr, int ptr_size);
+void rtc_write_time	( struct tm *rtc_ptr, int ptr_size);
+>>>>>>> 8c853fbfacb2adc8ae61baf71b109b0e4aa78fcf
 
 #endif 
