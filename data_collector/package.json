@@ -16,8 +16,16 @@
   "author": "colin",
   "license": "ISC",
   "dependencies": {
+    "aes-js": "^3.1.0",
     "ansi": "^0.3.1",
+    "bufferpack": "0.0.6",
+    "crc": "^3.5.0",
+    "netmask": "^1.0.6",
     "node-red-contrib-gpio": "^0.10.0",
-    "pi-gpio": "0.0.8"
+    "node-rpi-gpio-control": "^1.0.7",
+    "pi-gpio": "0.0.8",
+    "rpi-gpio-buttons": "^1.0.3",
+    "wiring-pi": "^2.2.1",
+    "wiringpi-node": "^2.4.4"
   }
 }

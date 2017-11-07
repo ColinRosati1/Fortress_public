@@ -33,29 +33,29 @@ try:
 		    time.sleep(0.05)
 		    GPIO.output(19,False)
 		    time.sleep(0.05)
-	    if input_state == False:
-	        print('Button Pressed - executing ...')
+	if input_state == False:
+		print('Button Pressed - executing ...')
 		GPIO.output(23,True)
 		f.write('\n')
-	    	f.write(command) #write our command to text file
-	    	f.write(datetime.datetime.now().ctime())
-	    	f.write('\n')
-	        time.sleep(1)
-	        GPIO.output(23,False)
-	        time.sleep(0.2)
-	    else:
-			GPIO.output(23,False)
+		f.write(command) #write our command to text file
+		f.write(datetime.datetime.now().ctime())
+		f.write('\n')
+		time.sleep(1)
+		GPIO.output(23,False)
+		time.sleep(0.2)
+	else:
+		GPIO.output(23,False)
 
 
 except KeyboardInterrupt:  
     # exits when you press CTRL+C  
-    print " EXIT\n"   
+    print (" EXIT\n")   
   
 except:  
     # this catches ALL other exceptions including errors.  
     # You won't get any error messages for debugging  
     # so only use it once your code is working  
-    print "Other error or exception occurred!"  
+    print ("Other error or exception occurred!") 
   
 finally:  
     GPIO.cleanup() # this ensures a clean exit  
