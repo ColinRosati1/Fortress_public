@@ -11,9 +11,7 @@ class FtiRpc{
 		this.unit = unit
 		if(!host){return this}
 		
-			this.port = new FtiRpcSocket(host,port)
-			
-		
+			this.port = new FtiRpcSocket(host,port)	
 	}
 	close(){
 		if(this.port){
@@ -62,7 +60,7 @@ class FtiRpc{
 			payload.push((word>>8)&0xff)
 		}
 		if(string){
-			//	string = new Buffer(string); not going to deal with this yet
+				string = new Buffer(string); //not going to deal with this yet
 		}
 		
 		
@@ -174,17 +172,18 @@ class FtiRpcUdp extends FtiRpc{
 		if(!host){
 			return this;
 		}
-		this.port = new FtiRpcUdpSocket(host,port)
+		this.port = new FtiRpcUdpSocket(host,port) // this is not initialized 
 	}
-	scope_comb_test(n){
+	scope_comb_test(n, callBack){
 		var ra =[]
 		var xa =[]
 		var idx 
 		var s = dgram.createSocket('udp4');
 		var self = this
-		s.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
+		s.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){ // here we bind to a port which is already used??
+			console.log("bind");
 			self.rpc0(6,[n,0]);
-			
+			console.log('after send rpc');
 		});
 		s.on('message', function(e,rinfo){
 			console.log('receiving')
@@ -196,6 +195,7 @@ class FtiRpcUdp extends FtiRpc{
 				ra.push(r);
 				xa.push(x);
 				console.log([r,x,idx]);
+				// callBack(r);
 				if (idx == 1){
 					console.log(ra);
 					console.log(xa);
@@ -297,7 +297,7 @@ class FtiRpcUdpSocket{
 		this.socket.on('message', function(e,rinfo){
 			ack = e;
 			sender = rinfo;
-			//console.log(sender)
+			console.log(sender)
 			callBack(ack,err)
 			return;
 		})

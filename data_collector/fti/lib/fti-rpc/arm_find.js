@@ -35,7 +35,6 @@ LocatorClient.prototype ={
 		return this.nif;
 	},
 	discover_query: function() {
-		// body...
 		var port = this.listener.address().port;
 		var ip = this.listener.address().address;
 		var pkt = [LOC_TYPE_DISCOVER,8,this.mac_addr(), port & 0xff, port >> 8]
@@ -46,21 +45,17 @@ LocatorClient.prototype ={
 		return ((this.nif && this.nif.mac) || [0,0,0,0,0,0])
 	},
 	send_query: function() {
-		// body...
 		var dq = this.discover_query();
-		//console.log(dq.length);
+		console.log(dq.length);
 		var sender = this.sender
 		sender.send(dq, 0, dq.length, 27182, '255.255.255.255', function () {
-			// body...
 			console.log('query sent')
 		} );
 	},
 	receive_data: function(data) {
-		// body...
-		//console.log(data.toString())
+		console.log(data.toString())
 	},
 	local_port_ip: function() {
-		// body...
 		console.log(this.listener.address().address)
 		console.log(this.listener.address().port)
 	},
@@ -130,15 +125,12 @@ class ArmLocator{
 					callBack(devlist)
 					devlist.push(dev);
 				}, secTimeout)
-			});
-	
-			
-		
+			});	
 		console.log(devlist)
-		return devlist;
-		
+		return devlist;		
 	}
 }
+
 class ArmDev{
 	constructor(data, nif_ip){
 		this.nif_ip = nif_ip

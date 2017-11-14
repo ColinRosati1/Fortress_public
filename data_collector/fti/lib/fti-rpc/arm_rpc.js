@@ -190,6 +190,17 @@ class ArmRpcBase{
 		})
 		
 	}
+	echo_cb(callback){
+		var self = this;
+		var pkt = [ARM_RPC_ECHO,1,2,3]
+		//this.rpc(pkt,0)
+		this.packet_for(pkt,function(p){
+			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
+			console.log(p.byteLength)
+			console.log('echo')
+			callback();
+		})
+	}
 	dsp_open(){
 		//this.rpc([11,5],0);
 		var self = this;
@@ -202,7 +213,23 @@ class ArmRpcBase{
 		})
 		
 	}
+
+	dsp_open_cb(callback){
+		//this.rpc([11,5],0);
+		var self = this;
+		
+		this.packet_for([11,5],function(p){
+			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
+			console.log(p.byteLength)
+			console.log('dsp_open')
+			callback();
+		})
+		
+	}
 }
+
+
+
 
 class ArmRpc extends ArmRpcBase{
 	constructor(host, port,loc_port){
@@ -265,8 +292,9 @@ class ArmRpc extends ArmRpcBase{
 			
 
 			var ka = []
+			console.log('ke',ke);
 			for(var ko = 0; ko < ke.length; ko++){
-				ka.push(ke.readUInt8(ko))
+				ka.push(ke[ko]);
 			}
 
 			self.aesECB = new aesjs.ModeOfOperation.ecb(ka);
