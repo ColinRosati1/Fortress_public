@@ -70,7 +70,7 @@ function main() {
 function writer(data)
 {
 	console.log('writer has been hit');
-	fs.appendFile(path,'new'+'\n',function(err){});
+	fs.appendFile(path,data+'\n',function(err){});
 
 }
 
@@ -119,9 +119,7 @@ function Fti_Locate(){
 			})
 		}
 	}
-
 	var test = new TestRunner();
-
 
 	var KEY = [138, 23, 225,  96, 151, 39,  79,  57, 65, 108, 240, 251, 252, 54, 34,  87];
 			var bsize = KEY.length;
@@ -129,17 +127,17 @@ function Fti_Locate(){
 			for(var i = 0; i<bsize; i++){
 				pk.push(0);
 			}
-	console.log('pk = ',pk);
-	writer(pk);
 
 	var dsp = FtiRpc.udp('192.168.47.23');   // dsp address
-	var arm= new Fti.ArmRpc.ArmRpc('192.168.47.23');
-	var data = pk;
+	var arm = new Fti.ArmRpc.ArmRpc('192.168.47.23');
 	arm.echo_cb(function(){
 		console.log('echo');
 		arm.dsp_open_cb(function(){
-			console.log('dsp opened');
-			dsp.scope_comb_test(10); 				// ?? this is what throughs an error address in use
+			dsp.scope_comb_test(4);
+			
+			// fs.appendFile(path,dsp.scope_comb_test(4)+'\n',function(err){});
+			// writer(dsp.scope_comb_test(4)); 				// ?? this is what throughs an error address in use
+			
 			setTimeout(function(){
 				fs.open('scope_netpoll_data', 'wx', (err, fd) => {
 				  if (err) {
@@ -159,6 +157,9 @@ function Fti_Locate(){
 
 		})
 	})
+	wpi.digitalWrite(11, 0);
+    wpi.digitalWrite(10, 0);
+
 }
 
 function scan(secTimeout, callBack){
@@ -231,11 +232,5 @@ function scan(secTimeout, callBack){
 }
 
 
-
-
-
 GPIO();
 main();
-// Fti_Locate();
-// scan();
-// exit();

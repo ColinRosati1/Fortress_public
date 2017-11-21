@@ -4,11 +4,23 @@
 // ####################################################################
  
 var wpi = require('wiringpi-node'); // create an instance of the wiringpi-node GPIO pin modes 
+var fs = require('fs');
 
 // sets the values for pin HIGH and LOW.  
 const HIGH = 1;
 const LOW = 0;
 var secTimeout = 2000;
+var button = wpi.digitalRead(21);
+
+function myButton(){
+	for(i=0;i<10;i++){
+		console.log(button);				// write button state
+	    if(button == 1){ 					// if button pressed locat detectors with Fti_locate
+	    	console.log('button!');
+	    	return;
+	    }
+	}
+}
 
 // ####################################################################
 // GPIO opens pins
@@ -16,41 +28,27 @@ var secTimeout = 2000;
 function GPIO()
 {
 	var value = 1;
+	var path = ("datafile.txt")
 	console.log('opening GPIO pins');
 	wpi.setup('gpio'); //wpi-node uses pin initialization GPIO
 	wpi.pinMode(21, wpi.INPUT); //button
-	wpi.pinMode(10, wpi.OUTPUT); //LED
-	wpi.pinMode(11, wpi.OUTPUT); //LED
+	
+	var button = wpi.digitalRead(21);		//read button
 
-	var button = wpi.digitalRead(29);		//read button
-	wpi.digitalWrite(11,0);		//LED off
-	wpi.digitalWrite(10, 0);	//LED off
+	fs.appendFile(path,'button-new'+'\n',function(err){});
 
-    console.log(button);				// write button state
-    if(button == 1){ 					// if button pressed locat detectors with Fti_locate
-    	console.log('button!');
-    	wpi.digitalWrite(11, 1);
-		wpi.digitalWrite(10, 1); 		//blinks LED
-    	return;
-    }
-}
+	for(i=0;i<10;i++){
+		setTimeout(function(i){
+			console.log(button);				// write button state
+		    if(button == 1){ 					// if button pressed locat detectors with Fti_locate
+		    	console.log('button!');
+		    	callback();
+		    }
+		}
+		, 250);
+	}
 
-
-// ####################################################################
-// GPIO blinking 
-// ####################################################################
-function blink() {
-	var i = 0, blinkTime = 10, v = 1;
-	setTimeout(function(){
-	    wpi.digitalWrite(11, 1);
-		wpi.digitalWrite(10, 1); 		//blinks LED
-
-	},5000);
-
-    
-    wpi.digitalWrite(11, 0);
-    wpi.digitalWrite(10, 0);
+	// setTimeout(myButton,3000);
 }
 
 GPIO();
-// blink();

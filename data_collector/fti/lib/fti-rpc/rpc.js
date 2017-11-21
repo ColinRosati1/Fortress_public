@@ -174,7 +174,7 @@ class FtiRpcUdp extends FtiRpc{
 		}
 		this.port = new FtiRpcUdpSocket(host,port) // this is not initialized 
 	}
-	scope_comb_test(n, callBack){
+	scope_comb_test(n, callback){
 		var ra =[]
 		var xa =[]
 		var idx 
@@ -195,7 +195,9 @@ class FtiRpcUdp extends FtiRpc{
 				ra.push(r);
 				xa.push(x);
 				console.log([r,x,idx]);
-				// callBack(r);
+				var data = [r,x,idx];
+				// return [r,x,idx];
+				callback(r);
 				if (idx == 1){
 					console.log(ra);
 					console.log(xa);
