@@ -4,6 +4,8 @@ var net = require('net');
 
 const DSP_SCOPE_PORT = 10004
 
+
+
 class FtiRpc{
 	constructor(host, port, unit){
 		unit = unit || 1
@@ -174,6 +176,7 @@ class FtiRpcUdp extends FtiRpc{
 		}
 		this.port = new FtiRpcUdpSocket(host,port) // this is not initialized 
 	}
+
 	scope_comb_test(n, callback){
 		var ra =[]
 		var xa =[]
@@ -188,19 +191,14 @@ class FtiRpcUdp extends FtiRpc{
 		s.on('message', function(e,rinfo){
 			console.log('receiving')
 			if(e){
-				//console.log(e.byteLength)
 				idx = e.readInt16LE(0);
 				var r = e.readInt16LE(2);
 				var x = e.readInt16LE(4);
 				ra.push(r);
 				xa.push(x);
-				console.log([r,x,idx]);
-				var data = [r,x,idx];
-				// return [r,x,idx];
-				callback(r);
 				if (idx == 1){
-					console.log(ra);
-					console.log(xa);
+					console.log([ra,xa]);
+					callback([ra,xa])
 					s.close();
 					s.unref();
 				}
@@ -309,7 +307,6 @@ class FtiRpcUdpSocket{
 			console.log("shut down dsp")
 		})
 	}
-
 
 }
 

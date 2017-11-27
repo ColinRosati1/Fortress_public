@@ -21,6 +21,7 @@ class NetInterface{
 	}
 	static interface_list_mac(filter){
 		var list = os.networkInterfaces();
+		console.log(list)
 		var names = []
 		var ifList = []
 		if (filter != null){
@@ -32,9 +33,9 @@ class NetInterface{
 		
 
 		for (var i = names.length - 1; i >= 0; i--) {
-			var block = new Netmask(list[names[i]][1]['address'],list[names[i]][1]['netmask']);
+			var block = new Netmask(list[names[i]][0]['address'],list[names[i]][0]['netmask']);
 
-			ifList.push( new NetInterface(names[i], list[names[i]][1]['address'], block.broadcast, list[names[i]][1]['mac'].split(':').map(function(e){
+			ifList.push( new NetInterface(names[i], list[names[i]][0]['address'], block.broadcast, list[names[i]][0]['mac'].split(':').map(function(e){
 				return parseInt(e,16);
 			}), block.mask));
 		};

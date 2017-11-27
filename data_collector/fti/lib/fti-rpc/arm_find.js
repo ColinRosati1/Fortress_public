@@ -63,16 +63,18 @@ LocatorClient.prototype ={
 
 class ArmLocator{
 	static scan(secTimeout, callBack){
-		var list = NetInterface.find(/^Ethernet|^en/);
+		var list = NetInterface.find(/^Ethernet|^en|^eth/);
 		var devlist=[];
 		var listeners = [];
 		var senders = [];
+		console.log('inside arm locator');
+		//console.log(list)
 			list.forEach(function(nif,i){
 				var listenerClient = new LocatorClient();;
 				var senderClient = new LocatorClient();;
 				senders[i] = dgram.createSocket('udp4');
 				senders[i].bind(0, nif.ip , function() { senders[i].setBroadcast(true) 
-				
+				console.log('listener',listenerClient);
 				} );
 				senders[i].on('error', function(err) {
 				  console.log(err);
@@ -86,15 +88,15 @@ class ArmLocator{
 				var dev;
 				listeners[i].bind(0,'', function() {
 				  
-				  listener.setBroadcast(true);
+				  // listener.setBroadcast(true);
 				  listenerClient.listener(listeners[i]);
 				  listenerClient.sender(senders[i]);
-				  console.log(sender.address().address);
-				  listenerClient.local_port_ip();
-				  listenerClient.sender().send(packed,0,packed.length,27182, '255.255.255.255' )
+				  // console.log(sender.address().address);
+				  // listenerClient.local_port_ip();
+				  // listenerClient.sender().send(packed,0,packed.length,27182, '255.255.255.255' )
 				  listenerClient.net_if(nif);
 
-				  console.log(listenerClient.discover_query());
+				  // console.log(listenerClient.discover_query());
 				  
 				  
 				});
@@ -110,11 +112,12 @@ class ArmLocator{
 				  //listener.close();
 				});
 
-				sender.send(packed,0,packed.length,27182, '255.255.255.255' );
-				setTimeout(1000, console.log(listenerClient.local_port_ip()));
-				sender.send
+				// sender.send(packed,0,packed.length,27182, '255.255.255.255' );
+				// setTimeout(1000, console.log(listenerClient.local_port_ip()));
+				// sender.send
 				
 				setTimeout(function(){
+					console.log('should return')
 					console.log(dev);
 					listeners.forEach(function(s){
 						s.unref();
@@ -123,11 +126,11 @@ class ArmLocator{
 						s.unref();
 					})
 					callBack(devlist)
-					devlist.push(dev);
+					// devlist.push(dev);
 				}, secTimeout)
 			});	
-		console.log(devlist)
-		return devlist;		
+		// console.log(devlist)
+		// return devlist;		
 	}
 }
 
