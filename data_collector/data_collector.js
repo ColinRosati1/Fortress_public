@@ -3,8 +3,16 @@
 // data_collector.js uses FTI Flash calls to:
 //		* scan available detectors
 // 		* netpoll
-// 		* log data from scope
+// 		* log data from scope, log scan
 
+
+// TODO use Dan's app to look out how scope data is handled, model that
+
+// TODO connect head to photo eye and test data, ask Bin for help
+
+// TODO fix GPIO button, blinking light states
+
+// TODO close program , no blocking
 // ####################################################################
 var fs = require('fs');
 var wpi = require('wiringpi-node'); // create an instance of the wiringpi-node GPIO pin modes 
@@ -16,11 +24,10 @@ var ds = require('./fti/lib/fti-rpc/rpc.js');
 var Fti = require('./fti');
 var sys = require('util')
 var exec = require('child_process').exec;
+var jsonfile = require('jsonfile')
+var file = 'data.json'
 var child;
-var array = [];
 
-// import ArmLocator from './fti/lib/fti-rpc/arm_find.js'
- 
 // sets the values for pin HIGH and LOW.  
 const HIGH = 1;
 const LOW = 0;
@@ -75,15 +82,30 @@ function main() {
 //async method nesting the file writing function inside of this function
 //must nest callback in order for stack to move out of scope
 // ####################################################################
-function writer(data)
+function writer(Obj_Type,data, DataSize)
 {
+	var netinfo= [];
+	var netinfo_json= [];
+	for(var prop in data[1]){
+		    // console.log('key = ', prop);
+		    // console.log('value = ', data[0][prop]);
+		    netinfo.push(prop,data[0][prop]);
+		    netinfo_json.push(prop,data[0][prop], "\n");
+		}
+
 	console.log('writer has been hit')
 	child = exec("date", function (error, stdout) {
-	  fs.appendFile(path,'\n'+stdout+"Scope Data =" +data+'\n',function(err){});
+	  fs.appendFile(path,'\n'+stdout+Obj_Type+'\n'+netinfo+'}'+'\n',function(err){});
 	   if (error !== null) {
 	    console.log('exec error: ' + error);
 	    return;
 	  }
+
+	  
+
+	  jsonfile.writeFile(file,stdout + Obj_Type + netinfo_json, {flag: 'a'}, function (err) {
+		  console.error(err)
+		})
 	});
 }
 
@@ -115,36 +137,29 @@ function Fti_Locate(){
 	var FtiRpc = fti.Rpc.FtiRpc;
 	var dgram = require('dgram');
 
-	/*var dsp = FtiRpc.udp('192.168.47.23');   // dsp address
-	var arm= new Fti.ArmRpc.ArmRpc('192.168.47.23');
+	var dsp = FtiRpc.udp('192.168.47.23', 0,null);   //TODO Doesnt close, blocks
+	var arm= new Fti.ArmRpc.ArmRpc('192.168.47.23');	//TODO Doesnt close, blocks
 	arm.echo_cb(function(){
-		console.log('echo');
+	
 		arm.dsp_open_cb(function(){
-			console.log('dsp opened');
 			dsp.scope_comb_test(10, function(array){
-				writer(array);
+				writer('Scope data { ',array,array[10]);
 			});
 			setTimeout(function(){
 			dsp.close();
 			},4500)
+
 		})			
-	})*/
+	})
 
 	var ArmLocator = arloc.ArmLocator;
 	console.log('scaning for arm devices')
 	ArmLocator.scan(1000,function (devlist) {
-		// body...
-		console.log('in call back');
-		console.log(devlist)
+		
+		console.log(devlist);
+		writer('devlist {',devlist,devlist[10]);
 	});
 
-	/*ArmLocator.scan(function(){
-		ArmLocator.scan(1000,array);
-		console.log('scaning for arm devices',ArmLocator.scan(1000,array));
-
-	})*/
-	// fti.ArmFind.scan(10,array);
-	// arloc.scan(10,array);
 }
 
 // ####################################################################

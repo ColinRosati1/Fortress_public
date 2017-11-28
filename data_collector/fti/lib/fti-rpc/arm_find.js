@@ -46,14 +46,14 @@ LocatorClient.prototype ={
 	},
 	send_query: function() {
 		var dq = this.discover_query();
-		console.log(dq.length);
+		console.log('dq length=',dq.length);
 		var sender = this.sender
 		sender.send(dq, 0, dq.length, 27182, '255.255.255.255', function () {
 			console.log('query sent')
 		} );
 	},
 	receive_data: function(data) {
-		console.log(data.toString())
+		console.log('receive data = ',data.toString())
 	},
 	local_port_ip: function() {
 		console.log(this.listener.address().address)
@@ -67,70 +67,47 @@ class ArmLocator{
 		var devlist=[];
 		var listeners = [];
 		var senders = [];
-		console.log('inside arm locator');
-		//console.log(list)
-			list.forEach(function(nif,i){
-				var listenerClient = new LocatorClient();;
-				var senderClient = new LocatorClient();;
-				senders[i] = dgram.createSocket('udp4');
-				senders[i].bind(0, nif.ip , function() { senders[i].setBroadcast(true) 
-				console.log('listener',listenerClient);
-				} );
-				senders[i].on('error', function(err) {
-				  console.log(err);
-				});
-				senders[i].on('message', function(msg,rinfo){
-					console.log('msg');
-					console.log(msg);
-				});
+		list.forEach(function(nif,i){
+			var listenerClient = new LocatorClient();;
+			var senderClient = new LocatorClient();;
+			senders[i] = dgram.createSocket('udp4');
+			senders[i].bind(0, nif.ip , function() { senders[i].setBroadcast(true) 
+			console.log('listener',listenerClient);
+			} );
+			senders[i].on('error', function(err) {
+			  console.log(err);
+			});
+			senders[i].on('message', function(msg,rinfo){
+				console.log('msg');
+				console.log(msg);
+			});
 
-				listeners[i] = dgram.createSocket('udp4');
-				var dev;
-				listeners[i].bind(0,'', function() {
-				  
-				  // listener.setBroadcast(true);
-				  listenerClient.listener(listeners[i]);
-				  listenerClient.sender(senders[i]);
-				  // console.log(sender.address().address);
-				  // listenerClient.local_port_ip();
-				  // listenerClient.sender().send(packed,0,packed.length,27182, '255.255.255.255' )
-				  listenerClient.net_if(nif);
+			listeners[i] = dgram.createSocket('udp4');
+			var dev;
+			listeners[i].bind(0,'', function() {
+			  listenerClient.listener(listeners[i]);
+			  listenerClient.sender(senders[i]);
+			  listenerClient.net_if(nif);
+			});
+			listeners[i].on('listening', function(){
+				listenerClient.send_query();
+			});
+			listeners[i].on('message', function(msg, rinfo) {
+			  listenerClient.receive_data(msg);
+			  dev = new ArmDev(msg, nif.ip);
+			  devlist.push(dev);
+			});
 
-				  // console.log(listenerClient.discover_query());
-				  
-				  
+			setTimeout(function(){
+				listeners.forEach(function(s){
+					s.unref();
 				});
-				listeners[i].on('listening', function(){
-					listenerClient.send_query();
-				});
-				listeners[i].on('message', function(msg, rinfo) {
-				  console.log(msg);
-				  console.log(rinfo)
-				  listenerClient.receive_data(msg);
-				  dev = new ArmDev(msg, nif.ip);
-				  devlist.push(dev);
-				  //listener.close();
-				});
-
-				// sender.send(packed,0,packed.length,27182, '255.255.255.255' );
-				// setTimeout(1000, console.log(listenerClient.local_port_ip()));
-				// sender.send
-				
-				setTimeout(function(){
-					console.log('should return')
-					console.log(dev);
-					listeners.forEach(function(s){
-						s.unref();
-					});
-					senders.forEach(function(s){
-						s.unref();
-					})
-					callBack(devlist)
-					// devlist.push(dev);
-				}, secTimeout)
-			});	
-		// console.log(devlist)
-		// return devlist;		
+				senders.forEach(function(s){
+					s.unref();
+				})
+				callBack(devlist)
+			}, secTimeout)
+		});		
 	}
 }
 

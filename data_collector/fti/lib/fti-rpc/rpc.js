@@ -64,12 +64,8 @@ class FtiRpc{
 		if(string){
 				string = new Buffer(string); //not going to deal with this yet
 		}
-		
-		
 		payload = this.addCheckSum(payload);
-		
 		return new Buffer(payload);
-
 	}
 	addCheckSum(str){
 		var cs = this.checkBytes(str)
@@ -110,6 +106,9 @@ class FtiRpc{
 	}
 
 	static udp(host, port, unit){
+		console.log('udp host', host)
+		console.log('udp port', port)
+		console.log('udp unit', unit)
 		return new FtiRpcUdp(host, port, unit)
 	}
 
@@ -181,12 +180,17 @@ class FtiRpcUdp extends FtiRpc{
 		var ra =[]
 		var xa =[]
 		var idx 
-		var s = dgram.createSocket('udp4');
+		var s = dgram.createSocket('udp4'); //create a udp4 socket
 		var self = this
-		s.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){ // here we bind to a port which is already used??
+		s.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){ // here we bind to a port. 0 assigns to available port
 			console.log("bind");
 			self.rpc0(6,[n,0]);
 			console.log('after send rpc');
+			return;
+		});
+		s.on('error', (err) => {
+		  console.log(`server error:\n${err.stack}`);
+		  server.close();
 		});
 		s.on('message', function(e,rinfo){
 			console.log('receiving')
@@ -204,12 +208,12 @@ class FtiRpcUdp extends FtiRpc{
 				}
 			}else{
 				s.close();
-
 			}
 		});
 		s.on('close', function(){
 			console.log('closing')
 			s.unref();
+			return;
 		})
 		setTimeout(function(){
 			if(idx != 1){
@@ -217,8 +221,8 @@ class FtiRpcUdp extends FtiRpc{
 			}else{
 				s.unref();
 			}
-		}, 1000);
-
+		}, 1000); 
+		return;
 	}
 	dsp_manual_test(callBack){
 		var ra =[]
@@ -283,6 +287,7 @@ class FtiRpcUdpSocket{
 		this.socket.send(packet, 0, packet.length, this.rem_port, this.rem_ip, function(){
 			console.log('packet written')
 		});
+		return;
 	}
 	purge(){/*does nothing for udp*/}
 	getPayload(sec, callBack){
@@ -305,9 +310,9 @@ class FtiRpcUdpSocket{
 	close(){
 		this.socket.close(function(){
 			console.log("shut down dsp")
+			return;
 		})
 	}
-
 }
 
 module.exports ={}

@@ -70,7 +70,7 @@ class ArmRpcBase{
 			console.log("bound f")
 		})
 		this.socket.bind(0,'0.0.0.0');
-
+		this.socket.unref(); 				// needed to add this because otherwise initializing socket hanges with incomplete binding
 	}
 
 	rpc(data, time_out, trys){
@@ -142,7 +142,7 @@ class ArmRpcBase{
 		sec = sec/trys
 		this.socket.on('message', function(msg,rinfo){
 			self.init_socket();
-			callBack([msg,rinfo]);
+			callBack([msg,rinfo]); 
 			ack = msg;
 
 			
@@ -181,7 +181,6 @@ class ArmRpcBase{
 	echo(){
 		var self = this;
 		var pkt = [ARM_RPC_ECHO,1,2,3]
-		//this.rpc(pkt,0)
 		this.packet_for(pkt,function(p){
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
 			console.log(p.byteLength)
@@ -193,13 +192,12 @@ class ArmRpcBase{
 	echo_cb(callback){
 		var self = this;
 		var pkt = [ARM_RPC_ECHO,1,2,3]
-		//this.rpc(pkt,0)
 		this.packet_for(pkt,function(p){
+			console.log('from echo callback');
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
-			console.log(p.byteLength)
-			console.log('echo')
 			callback();
 		})
+		return;
 	}
 	dsp_open(){
 		//this.rpc([11,5],0);
@@ -215,51 +213,38 @@ class ArmRpcBase{
 	}
 
 	dsp_open_cb(callback){
-		//this.rpc([11,5],0);
 		var self = this;
-		
 		this.packet_for([11,5],function(p){
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
-			console.log(p.byteLength)
+			// console.log(p.byteLength)
 			console.log('dsp_open')
 			callback();
 		})
+		return;
 		
 	}
 }
-
-
-
 
 class ArmRpc extends ArmRpcBase{
 	constructor(host, port,loc_port){
 		super(host, port,loc_port);
 		if(!host){
+			console.log('no host')
 			return this;
 		}
 		port = port || ARM_RPC_PORT;
 		loc_port = loc_port || 0;
+		console.log('port = ',port)
+		console.log('host = ',host)
+		console.log('loc_port = ',loc_port)
 
 		this.rem_ip = host
 		this.rem_port = port
 		this.loc_port = loc_port
 		this.init_socket();
-		/*var self = this;
-		Sync(function(){
-			console.log(215)
-			self.socket = self.init_socket.sync(null);
-			console.log(217)
-			var d = self.init_session_key(null);
-			self.enc = d[0];
-			self.dec = d[1];
-			console.log("keys initialized")
-		})*/
-		
 	}
 	init_session_key(callBack){
-		
 		if(this.aesECB){
-			
 			callBack([this.aesECB]);
 		}else{
 		this.KEY = [138, 23, 225,  96, 151, 39,  79,  57, 65, 108, 240, 251, 252, 54, 34,  87];

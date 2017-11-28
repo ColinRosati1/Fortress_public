@@ -20,6 +20,7 @@
     "ansi": "^0.3.1",
     "bufferpack": "0.0.6",
     "crc": "^3.5.0",
+    "jsonfile": "^4.0.0",
     "netmask": "^1.0.6",
     "node-red-contrib-gpio": "^0.10.0",
     "node-rpi-gpio-control": "^1.0.7",
