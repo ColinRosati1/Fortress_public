@@ -1,0 +1,15 @@
+{
+  "name": "fti_halo_demo_node",
+  "version": "1.0.0",
+  "description": "fti-flash app",
+  "main": "server.js",
+  "scripts": {
+    "test": "test",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "fti-flash"
+  ],
+  "author": "colin rosati",
+  "license": "ISC"
+}
