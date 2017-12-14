@@ -1,0 +1,21 @@
+{
+  "name": "fti_halo_demo_node",
+  "version": "1.0.0",
+  "description": "fti-flash node react app",
+  "main": "server.js",
+  "scripts": {
+    "test": "test",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ColinRosati1/Fortress/tree/master/fti_halo_demo_node"
+  },
+  "keywords": [
+    "fti-flash",
+    "node",
+    "react"
+  ],
+  "author": "colin rosati",
+  "license": "ISC"
+}
