@@ -29,7 +29,6 @@
 // 	192.168.33.105 ??
 // 	192.168.33.50  my mac's second ip address
 
-
 // ####################################################################
 var fs = require('fs');
 var wpi = require('wiringpi-node'); // create an instance of the wiringpi-node GPIO pin modes 
@@ -57,17 +56,51 @@ var path = ("datafile.txt");
 // ####################################################################
 function GPIO()
 {
-	var value = 1;
-	console.log('opening GPIO pins');
 	wpi.setup('gpio'); //wpi-node uses pin initialization GPIO
-	wpi.pinMode(9, wpi.INPUT); //button
-	wpi.pullUpDnControl(9, wpi.PUD_UP)
 	wpi.pinMode(10, wpi.OUTPUT); //LED
 	wpi.pinMode(11, wpi.OUTPUT); //LED
+	var a = 1;
+	var i = 0;
 
-	// wpi.digitalRead(21);		//read button
+	blink(10);
 	wpi.digitalWrite(11,0);		//LED off
 	wpi.digitalWrite(10, 0);	//LED off
+    setInterval(buttonpress,500);
+}
+
+function blink(LED){
+		var a =1;
+		var b = a%2;
+		a++;
+		setTimeout(function(){
+			blink(LED)
+		},200);
+
+		wpi.digitalWrite(LED, b);
+	}
+
+
+function buttonpress(button){
+	wpi.pinMode(9, wpi.INPUT); //button
+	wpi.pullUpDnControl(9, wpi.PUD_UP)
+	var button = wpi.digitalRead(9);
+	var a = 0;
+	var i = 1;
+	// console.log('button',button);
+	if(button == 0){ 
+		 // console.log('button',button);
+		for (i = 0; i < 5; i ++){
+			 setTimeout(function(){
+				var b = a%2;
+				a++;
+			 	wpi.digitalWrite(11, b);	//LED off
+			 },100);
+			i++;
+		}
+		button = 1;
+		Fti_Scope();	
+	}
+	GPIO();
 }
 
 
@@ -79,7 +112,8 @@ function main() {
 	var button = wpi.digitalRead(9);
 	wpi.digitalWrite(11, 1);
     wpi.digitalWrite(10, 1);
-    Fti_Locate();
+    GPIO();
+    // Fti_Locate();
   
 }
 
@@ -113,8 +147,6 @@ function writer(Obj_Type,data, DataSize)
 	});
 }
 
-
-
 // ####################################################################
 // GPIO closes pins
 // ####################################################################
@@ -128,7 +160,6 @@ function exit()
 	// wpi.teardown(40, function(){
 	// });
 }
-
 
 // ####################################################################
 // Locats and logs Arm scope data
@@ -163,11 +194,42 @@ function Fti_Locate(){
 		// console.log(devlist);
 		// writer('devlist {',devlist,devlist[10]);
 	});
-
 }
 
+// ####################################################################
+//  Arm scope data
 
-GPIO();
+// ####################################################################
+function Fti_Scope(){
+	'use strict'
+	var arloc = fti.ArmFind
+	var ArmRpc = fti.ArmRpc;
+	var ArmConfig = fti.ArmConfig;
+	var FtiRpc = fti.Rpc.FtiRpc;
+	var dgram = require('dgram');
+
+	var dsp = FtiRpc.udp('192.168.47.20', 0,null);   //TODO Doesnt close, blocks
+	var arm= new Fti.ArmRpc.ArmRpc('192.168.47.20');	//TODO Doesnt close, blocks
+	arm.echo_cb(function(){
+	
+		arm.dsp_open_cb(function(){
+			dsp.scope_comb_test(10, function(array){
+				// writer('Scope data { ',array,array[10]);
+			});
+			setTimeout(function(){
+			dsp.close();
+			},4500)
+
+		})			
+	})
+
+	var ArmLocator = arloc.ArmLocator;
+	console.log('scaning for arm devices')
+	ArmLocator.scan(1000,function (devlist) {
+		
+		// console.log(devlist);
+		// writer('devlist {',devlist,devlist[10]);
+	});
+}
+
 main();
-
-// exit();

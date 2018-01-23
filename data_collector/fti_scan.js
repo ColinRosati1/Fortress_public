@@ -39,21 +39,13 @@ function GPIO()
 }
 
 function blink(LED){
-		// var LED;
 		var a =1;
 		var b = a%2;
 		a++;
-		// console.log(LED);
 		setTimeout(function(){
 			blink(LED)
 		},300);
-		// setTimeout(function(){
-		// 	wpi.digitalWrite(LED, 1);
-		// },1000);
-		// setTimeout(function(){
-		// 	wpi.digitalWrite(LED, 0);
-		// },500);
-
+		
 		wpi.digitalWrite(LED, b);
 	}
 
