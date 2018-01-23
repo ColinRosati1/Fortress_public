@@ -10,9 +10,8 @@
 
 // TODO connect head to photo eye and test data, ask Bin for help
 
-// TODO fix GPIO button, blinking light states
+// TODO LOG this all to txt file json fromatted
 
-// TODO close program , no blocking
 // ####################################################################
 var fs = require('fs');
 var wpi = require('wiringpi-node'); // create an instance of the wiringpi-node GPIO pin modes 
@@ -25,6 +24,7 @@ var Fti = require('./fti');
 var sys = require('util')
 var exec = require('child_process').exec;
 var jsonfile = require('jsonfile')
+var _ = require('lodash');
 var file = 'data.json'
 var child;
 
@@ -42,13 +42,15 @@ function GPIO()
 	var value = 1;
 	console.log('opening GPIO pins');
 	wpi.setup('gpio'); //wpi-node uses pin initialization GPIO
-	wpi.pinMode(21, wpi.INPUT); //button
+	wpi.pinMode(9, wpi.INPUT); //button
+	wpi.pullUpDnControl(9, wpi.PUD_UP)
 	wpi.pinMode(10, wpi.OUTPUT); //LED
 	wpi.pinMode(11, wpi.OUTPUT); //LED
 
-	wpi.digitalRead(21);		//read button
+	// wpi.digitalRead(21);		//read button
 	wpi.digitalWrite(11,0);		//LED off
 	wpi.digitalWrite(10, 0);	//LED off
+
 }
 
 
@@ -57,23 +59,25 @@ function GPIO()
 // ####################################################################
 function main() {
 	var i = 0, blinkTime = 10, v = 1;
-	setTimeout(function(){
-	    wpi.digitalWrite(11, 1);
-		wpi.digitalWrite(10, 1); 		//blinks LED
-	},500);
-
-	wpi.pinMode(21, wpi.INPUT); 		//button
-    var button = wpi.digitalRead(21);	// reads button state
-    console.log(button);				// write button state
-    if(button == 0){ 					// if button pressed locat detectors with Fti_locate
-    	wpi.digitalWrite(11, 1);
-    	wpi.digitalWrite(10, 1);
-    	Fti_Locate();	
-    	return;
-    }
-    wpi.digitalWrite(11, 0);
+	var button = wpi.digitalRead(9);
+	wpi.digitalWrite(11, 0);
     wpi.digitalWrite(10, 0);
-
+    i = 1000;
+    Fti_Locate();
+	
+	_.times(1, function(){ //lodash for loop
+		if(button == 0){ 				// if button pressed locat detectors with Fti_locate
+	    	wpi.digitalWrite(11,1);		//LED off
+			wpi.digitalWrite(10, 1);	//LED off
+			Fti_Locate();	
+	    }
+		 wpi.digitalWrite(11, 0);
+   		 wpi.digitalWrite(10, 0);
+   		 i + 500;
+   		 console.log(i)
+	},1000);
+	
+    
     // WriteStream(path, options); // LOG SCOPE AND NETPOLL
 }
 
@@ -100,8 +104,6 @@ function writer(Obj_Type,data, DataSize)
 	    console.log('exec error: ' + error);
 	    return;
 	  }
-
-	  
 
 	  jsonfile.writeFile(file,stdout + Obj_Type + netinfo_json, {flag: 'a'}, function (err) {
 		  console.error(err)
@@ -142,7 +144,7 @@ function Fti_Locate(){
 	arm.echo_cb(function(){
 	
 		arm.dsp_open_cb(function(){
-			dsp.scope_comb_test(10, function(array){
+			dsp.scope_comb_test(20, function(array){
 				writer('Scope data { ',array,array[10]);
 			});
 			setTimeout(function(){

@@ -156,16 +156,18 @@ class ArmRpcBase{
 					trys = trys - 1
 				}
 				else{
-					clearTimeout(t);
+					// clearTimeout(t);
 					console.log('oh no')
-					throw new ArmRpcErrorTimeout();
+					// throw new ArmRpcErrorTimeout();
+					return;
 
 				}
 			}
 			else{
-				clearTimeout(t);
+				// clearTimeout(t);
+				return;
 			}
-		}, sec*1000)
+		}, sec*3000)
 	}
 	verify_rpc_ack(ack){
  		if(ack.length < 4){
