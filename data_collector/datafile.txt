@@ -1,36 +1,76 @@
 
-Tue 23 Jan 15:02:04 EST 2018
+Tue  6 Feb 10:33:43 EST 2018
 devlist {
-nif_ip,192.168.33.45,my_mac,184,39,235,192,144,20,dir_conn,0,mac,f8-99-55-7a-0b-67,ip,192.168.33.105,nm,255.255.255.0,gw,0.0.0.0,net_flags,UP,BROADCAST,LINK-UP,ARP,f_mac,f8-99-55-7a-0b-67,f_ip,192.168.33.105,f_nm,255.255.255.0,f_gw,0.0.0.0,net_mode,STATIC-IP,board_type,0,board_id,1,ver,20.16.6.53,name,Display,s_key,238,170,131,94,77,3,14,254,187,4,213,98,25,232,153,138,app_name,FTI_AP}
+}
 
-Tue 23 Jan 15:02:04 EST 2018
+Tue  6 Feb 10:34:14 EST 2018
 devlist {
-nif_ip,192.168.33.45,my_mac,184,39,235,192,144,20,dir_conn,0,mac,f8-99-55-7a-0b-67,ip,192.168.33.105,nm,255.255.255.0,gw,0.0.0.0,net_flags,UP,BROADCAST,LINK-UP,ARP,f_mac,f8-99-55-7a-0b-67,f_ip,192.168.33.105,f_nm,255.255.255.0,f_gw,0.0.0.0,net_mode,STATIC-IP,board_type,0,board_id,1,ver,20.16.6.53,name,Display,s_key,238,170,131,94,77,3,14,254,187,4,213,98,25,232,153,138,app_name,FTI_AP}
+}
 
-Tue 23 Jan 15:02:04 EST 2018
+Tue  6 Feb 10:34:39 EST 2018
 devlist {
-nif_ip,192.168.33.45,my_mac,184,39,235,192,144,20,dir_conn,0,mac,f8-99-55-7a-0b-67,ip,192.168.33.105,nm,255.255.255.0,gw,0.0.0.0,net_flags,UP,BROADCAST,LINK-UP,ARP,f_mac,f8-99-55-7a-0b-67,f_ip,192.168.33.105,f_nm,255.255.255.0,f_gw,0.0.0.0,net_mode,STATIC-IP,board_type,0,board_id,1,ver,20.16.6.53,name,Display,s_key,238,170,131,94,77,3,14,254,187,4,213,98,25,232,153,138,app_name,FTI_AP}
+}
 
-Tue 23 Jan 15:03:14 EST 2018
+Tue  6 Feb 10:34:51 EST 2018
 devlist {
-nif_ip,192.168.33.45,my_mac,184,39,235,192,144,20,dir_conn,0,mac,f8-99-55-7a-0b-67,ip,192.168.33.105,nm,255.255.255.0,gw,0.0.0.0,net_flags,UP,BROADCAST,LINK-UP,ARP,f_mac,f8-99-55-7a-0b-67,f_ip,192.168.33.105,f_nm,255.255.255.0,f_gw,0.0.0.0,net_mode,STATIC-IP,board_type,0,board_id,1,ver,20.16.6.53,name,Display,s_key,238,170,131,94,77,3,14,254,187,4,213,98,25,232,153,138,app_name,FTI_AP}
+}
 
-Tue 23 Jan 15:03:15 EST 2018
-devlist {
-nif_ip,192.168.33.45,my_mac,184,39,235,192,144,20,dir_conn,0,mac,f8-99-55-7a-0b-67,ip,192.168.33.105,nm,255.255.255.0,gw,0.0.0.0,net_flags,UP,BROADCAST,LINK-UP,ARP,f_mac,f8-99-55-7a-0b-67,f_ip,192.168.33.105,f_nm,255.255.255.0,f_gw,0.0.0.0,net_mode,STATIC-IP,board_type,0,board_id,1,ver,20.16.6.53,name,Display,s_key,238,170,131,94,77,3,14,254,187,4,213,98,25,232,153,138,app_name,FTI_AP}
+Tue  6 Feb 12:06:01 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
 
-Tue 23 Jan 15:03:15 EST 2018
-devlist {
-nif_ip,192.168.33.45,my_mac,184,39,235,192,144,20,dir_conn,0,mac,f8-99-55-7a-0b-67,ip,192.168.33.105,nm,255.255.255.0,gw,0.0.0.0,net_flags,UP,BROADCAST,LINK-UP,ARP,f_mac,f8-99-55-7a-0b-67,f_ip,192.168.33.105,f_nm,255.255.255.0,f_gw,0.0.0.0,net_mode,STATIC-IP,board_type,0,board_id,1,ver,20.16.6.53,name,Display,s_key,238,170,131,94,77,3,14,254,187,4,213,98,25,232,153,138,app_name,FTI_AP}
+Tue  6 Feb 12:09:43 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
 
-Tue 23 Jan 15:03:32 EST 2018
-devlist {
-nif_ip,192.168.33.45,my_mac,184,39,235,192,144,20,dir_conn,0,mac,f8-99-55-7a-0b-67,ip,192.168.33.105,nm,255.255.255.0,gw,0.0.0.0,net_flags,UP,BROADCAST,LINK-UP,ARP,f_mac,f8-99-55-7a-0b-67,f_ip,192.168.33.105,f_nm,255.255.255.0,f_gw,0.0.0.0,net_mode,STATIC-IP,board_type,0,board_id,1,ver,20.16.6.53,name,Display,s_key,238,170,131,94,77,3,14,254,187,4,213,98,25,232,153,138,app_name,FTI_AP}
+Tue  6 Feb 12:11:21 EST 2018
+string
+}
 
-Tue 23 Jan 15:18:41 EST 2018
-devlist {
-nif_ip,192.168.33.45,my_mac,184,39,235,192,144,20,dir_conn,0,mac,f8-99-55-7a-0b-67,ip,192.168.33.105,nm,255.255.255.0,gw,0.0.0.0,net_flags,UP,BROADCAST,LINK-UP,ARP,f_mac,f8-99-55-7a-0b-67,f_ip,192.168.33.105,f_nm,255.255.255.0,f_gw,0.0.0.0,net_mode,STATIC-IP,board_type,0,board_id,1,ver,20.16.6.53,name,Display,s_key,238,170,131,94,77,3,14,254,187,4,213,98,25,232,153,138,app_name,FTI_AP}
+Tue  6 Feb 12:12:58 EST 2018
 
-Tue 23 Jan 15:18:41 EST 2018
-devlist {
-nif_ip,192.168.33.45,my_mac,184,39,235,192,144,20,dir_conn,0,mac,f8-99-55-7a-0b-67,ip,192.168.33.105,nm,255.255.255.0,gw,0.0.0.0,net_flags,UP,BROADCAST,LINK-UP,ARP,f_mac,f8-99-55-7a-0b-67,f_ip,192.168.33.105,f_nm,255.255.255.0,f_gw,0.0.0.0,net_mode,STATIC-IP,board_type,0,board_id,1,ver,20.16.6.53,name,Display,s_key,238,170,131,94,77,3,14,254,187,4,213,98,25,232,153,138,app_name,FTI_AP}
+}
+
+Tue  6 Feb 12:13:26 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
+
+Tue  6 Feb 12:24:03 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
+
+Tue  6 Feb 12:51:33 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
+
+Tue  6 Feb 15:32:25 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
+
+Tue  6 Feb 15:34:28 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
+
+Tue  6 Feb 15:35:02 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
+
+Tue  6 Feb 15:35:28 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
+
+Tue  6 Feb 15:35:40 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
+
+Tue  6 Feb 15:35:42 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
+
+Tue  6 Feb 15:35:55 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}
+
+Tue  6 Feb 15:35:56 EST 2018
+[{"name":"eth0","ip":"192.168.33.45","broadcast":"192.168.47.255","mac":[184,39,235,192,144,20],"netmask":"255.255.240.0"}]
+}

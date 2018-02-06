@@ -1,6 +1,7 @@
 'use strict';
 
 var NetInterface = require('./net-interface.js');
+var NetInterface_scope = require('./net-interface.js');
 var dgram = require('dgram');
 var BufferPack = require('bufferpack');
 
@@ -46,14 +47,14 @@ LocatorClient.prototype ={
 	},
 	send_query: function() {
 		var dq = this.discover_query();
-		console.log('dq length=',dq.length);
+		// console.log('dq length=',dq.length);
 		var sender = this.sender
 		sender.send(dq, 0, dq.length, 27182, '255.255.255.255', function () {
-			console.log('query sent')
+			// console.log('query sent')
 		} );
 	},
 	receive_data: function(data) {
-		console.log('receive data = ',data.toString())
+		// console.log('receive data = ',data.toString())
 	},
 	local_port_ip: function() {
 		console.log(this.listener.address().address)
@@ -63,7 +64,7 @@ LocatorClient.prototype ={
 
 class ArmLocator{
 	static scan(secTimeout, callBack){
-		var list = NetInterface.find(/^Ethernet|^en|^eth/);
+		var list = NetInterface_scope.find(/^Ethernet|^en|^eth/);
 		var devlist=[];
 		var listeners = [];
 		var senders = [];
@@ -72,14 +73,12 @@ class ArmLocator{
 			var senderClient = new LocatorClient();;
 			senders[i] = dgram.createSocket('udp4');
 			senders[i].bind(0, nif.ip , function() { senders[i].setBroadcast(true) 
-			console.log('listener',listenerClient);
 			} );
 			senders[i].on('error', function(err) {
 			  console.log(err);
 			});
 			senders[i].on('message', function(msg,rinfo){
-				console.log('msg');
-				console.log(msg);
+				console.log('sender messafe = ',msg);
 			});
 
 			listeners[i] = dgram.createSocket('udp4');
@@ -96,6 +95,73 @@ class ArmLocator{
 			  listenerClient.receive_data(msg);
 			  dev = new ArmDev(msg, nif.ip);
 			  devlist.push(dev);
+			  var scope_data = dev.extract_loc_data(msg);
+			  return scope_data ;
+			});
+			
+			callBack(list);
+			setTimeout(function(){
+				listeners.forEach(function(s){
+					s.unref();
+				});
+				senders.forEach(function(s){
+					s.unref();
+				})
+			}, secTimeout)
+			return list;
+			
+		});		
+	}
+
+
+}
+
+class ScopeLocator{
+	static scan(secTimeout, callBack){
+		var list = NetInterface_scope.find(/^Ethernet|^en|^eth/);
+		var devlist=[];
+		var listeners = [];
+		var senders = [];
+		list.forEach(function(nif,i){
+			var listenerClient = new LocatorClient();;
+			var senderClient = new LocatorClient();;
+			senders[i] = dgram.createSocket('udp4');
+			senders[i].bind(0, nif.ip , function() { senders[i].setBroadcast(true) 
+			} );
+			senders[i].on('error', function(err) {
+			  console.log(err);
+			});
+			senders[i].on('message', function(msg,rinfo){
+				console.log('sender messafe = ',msg);
+			});
+
+			listeners[i] = dgram.createSocket('udp4');
+			var dev;
+			listeners[i].bind(0,'', function() {
+			  listenerClient.listener(listeners[i]);
+			  listenerClient.sender(senders[i]);
+			  listenerClient.net_if(nif);
+			});
+			listeners[i].on('listening', function(){
+				listenerClient.send_query();
+			});
+			listeners[i].on('message', function(msg, rinfo) {
+			  listenerClient.receive_data(msg);
+			  dev = new ArmDev(msg, nif.ip);
+			  // console.log('when I return dev.extract_loc_data = ', dev.extract_loc_data(msg));
+			  devlist.push(dev);
+			  var scope_data = dev.extract_loc_data(msg);
+			  // console.log('we hit the scope constructor call to return scope data directly below this'); 
+			  console.log(scope_data);
+			  return scope_data ;
+			  
+			  callBack(scope_data);
+			  
+			//   setTimeout(function(){
+			// 	callBack(dev.extract_loc_data(msg));
+			// 	return scope_data;
+			// }, 2000)
+
 			});
 
 			setTimeout(function(){
@@ -105,10 +171,11 @@ class ArmLocator{
 				senders.forEach(function(s){
 					s.unref();
 				})
-				callBack(devlist)
+				// callBack(scope_data);
 			}, secTimeout)
 		});		
 	}
+
 }
 
 class ArmDev{
@@ -117,63 +184,65 @@ class ArmDev{
 		this.extract_loc_data(data);
 	}
 	extract_loc_data(data){
-		
-	/*	
-	type,len  =  data[0,2].unpack('C*')
-      return unless type == LocatorClient::LOC_TYPE_DISCOVER
-      @my_mac   = data[ 2,6].unpack('C*')
-      @dir_conn = data[ 8,1].unpack('C*')
-      eth  =     data[ 9,19].unpack('C*')  # eth-config
-      fram =     data[28,19].unpack('C*')  # eth-config
-      loc  =     data[47..-1].unpack('C*')
-      @mac, @ip, @nm, @gw, @net_flags = parse_config(eth,  false)
-      @f_mac, @f_ip, @f_nm, @f_gw, @net_mode = parse_config(fram, true)
-      parse_loc_data(loc)
 
-*/
-	var type = data.readUInt8(0); //BufferPack.unpack('H',data[0]);
-	//console.log(type);
-	if(type != LOC_TYPE_DISCOVER){
-		return
-	}
-	var len = data.readUInt8(1);//BufferPack.unpack('H',data[1]);
-	this.my_mac =[];
-	for(var i = 0; i <6; i++){
-		this.my_mac[i] = data.readUInt8(2+i);	
-	} //BufferPack.unpack('6H',data,2);
-	this.dir_conn = data.readUInt8(8,1)//BufferPack.unpack('H',data,8);
-	var eth = []
-	for(var i = 0; i <19; i++){
-		eth[i] = data.readUInt8(9+i);	
-	}
-	var fram = []
-	for(var i = 0; i <19; i++){
-		fram[i] = data.readUInt8(28+i);	
-	}	 
-	 //BufferPack.unpack('19H', data,9);
-	//var fram = BufferPack.unpack('19H',data,28);
-	var loc = []
-	for(var i = 0; i <data.byteLength - 47; i++){
-		loc[i] = data.readUInt8(47+i);	
-	}	
-	//var loc = BufferPack.unpack((data.length - 47) + 'H', data, 47);
-	//console.log
-	var conf = this.parse_config(eth, false);
-	var fm = this.parse_config(fram, true);
+		/*	
+		type,len  =  data[0,2].unpack('C*')
+	      return unless type == LocatorClient::LOC_TYPE_DISCOVER
+	      @my_mac   = data[ 2,6].unpack('C*')
+	      @dir_conn = data[ 8,1].unpack('C*')
+	      eth  =     data[ 9,19].unpack('C*')  # eth-config
+	      fram =     data[28,19].unpack('C*')  # eth-config
+	      loc  =     data[47..-1].unpack('C*')
+	      @mac, @ip, @nm, @gw, @net_flags = parse_config(eth,  false)
+	      @f_mac, @f_ip, @f_nm, @f_gw, @net_mode = parse_config(fram, true)
+	      parse_loc_data(loc)
+		*/
 
-	this.mac = conf[0];
-	this.ip = conf[1];
-	this.nm = conf[2];
-	this.gw = conf[3];
-	this.net_flags = conf[4];
-	this.f_mac = fm[0];
-	this.f_ip = fm[1];
-	this.f_nm = fm[2];
-	this.f_gw = fm[3];
-	this.net_mode = fm[4];
+		var type = data.readUInt8(0); //BufferPack.unpack('H',data[0]);
+		//console.log(type);
+		if(type != LOC_TYPE_DISCOVER){
+			return
+		}
+		var len = data.readUInt8(1);//BufferPack.unpack('H',data[1]);
+		this.my_mac =[];
+		for(var i = 0; i <6; i++){
+			this.my_mac[i] = data.readUInt8(2+i);	
+		} //BufferPack.unpack('6H',data,2);
+		this.dir_conn = data.readUInt8(8,1)//BufferPack.unpack('H',data,8);
+		var eth = []
+		for(var i = 0; i <19; i++){
+			eth[i] = data.readUInt8(9+i);	
+		}
+		var fram = []
+		for(var i = 0; i <19; i++){
+			fram[i] = data.readUInt8(28+i);	
+		}	 
+		 //BufferPack.unpack('19H', data,9);
+		//var fram = BufferPack.unpack('19H',data,28);
+		var loc = []
+		for(var i = 0; i <data.byteLength - 47; i++){
+			loc[i] = data.readUInt8(47+i);	
+		}	
+		//var loc = BufferPack.unpack((data.length - 47) + 'H', data, 47);
+		//console.log
+		var conf = this.parse_config(eth, false);
+		var fm = this.parse_config(fram, true);
 
-	this.parse_loc_data(loc);
+		this.mac = conf[0];
+		this.ip = conf[1];
+		this.nm = conf[2];
+		this.gw = conf[3];
+		this.net_flags = conf[4];
+		this.f_mac = fm[0];
+		this.f_ip = fm[1];
+		this.f_nm = fm[2];
+		this.f_gw = fm[3];
+		this.net_mode = fm[4];
+
+		this.parse_loc_data(loc);
+		return loc;
 	}
+
 	parse_config(config, fram){
 		fram = fram !== false;
 
@@ -218,7 +287,7 @@ class ArmDev{
 		return [c_mac, c_ip, c_nm, c_gw, c_mode];
 	}
 	parse_loc_data(data){
-		console.log(data);
+		// console.log(data);
 		this.board_type = data[0];
 		this.board_id = data[1];
 		//data.slice(0,2).map([this.board_type, this.board_id])
@@ -229,9 +298,11 @@ class ArmDev{
 		this.name = (new Buffer(data.slice(6,18))).toString().trim();
 		this.s_key = data.slice(18,34);
 		this.app_name = (new Buffer(data.slice(34,-1))).toString().trim()
+		return data;
 	}	
 }
 
 module.exports = {}
 module.exports.ArmDev = ArmDev
 module.exports.ArmLocator = ArmLocator
+module.exports.ScopeLocator = ScopeLocator

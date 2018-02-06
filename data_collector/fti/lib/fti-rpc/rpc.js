@@ -4,8 +4,6 @@ var net = require('net');
 
 const DSP_SCOPE_PORT = 10004
 
-
-
 class FtiRpc{
 	constructor(host, port, unit){
 		unit = unit || 1
@@ -13,7 +11,9 @@ class FtiRpc{
 		this.unit = unit
 		if(!host){return this}
 		
-			this.port = new FtiRpcSocket(host,port)	
+			this.port = new FtiRpcSocket(host,port)
+			console.log("ftirpc.new")
+			//console.log(this.port)
 	}
 	close(){
 		if(this.port){
@@ -34,15 +34,32 @@ class FtiRpc{
 
 	}
 	rpc1(func,args,string,timeout,callBack){
-
+		var payload = this.payloadForRpc(func,args,string);
+		var packet = this.frame(payload);
+		this.port.write(packet);
+		this.port.callBack = callBack
+		
+		
+	}
+	rpc2(payload,callback){
+		console.log(payload)
+		var packet = this.frame(payload);
+		this.port.write(packet)
+		this.port.callBack = callback;
+		packet = null;
+		payload = null;
 	}
 	send_packet(packet, timeout){
 
 	}
 	rpc0(func,args,string,callBack){
 		var payload = this.payloadForRpc(func,args,string);
+		console.log(payload)
 		var packet = this.frame(payload);
 		this.port.write(packet);
+		this.port.callBack = function(){
+			console.log('no callBack set')
+		}
 	}
 	payloadForRpc(func,args,string){
 		var payload = [func]//String.fromCharCode(func)
@@ -62,27 +79,31 @@ class FtiRpc{
 			payload.push((word>>8)&0xff)
 		}
 		if(string){
-				string = new Buffer(string); //not going to deal with this yet
+			//	string = new Buffer(string); not going to deal with this yet
 		}
+		
+		
 		payload = this.addCheckSum(payload);
+		
 		return new Buffer(payload);
+
 	}
 	addCheckSum(str){
-		var cs = this.checkBytes(str)
-		str.push(cs[0])
-		str.push(cs[1])
-		return str//str.concat(String.fromCharCode(cs[0])).concat(String.fromCharCode(cs[1])); 
+		var cs = this.checkBytes(str);
+		str.push(cs[0]);
+		str.push(cs[1]);
+		return str;//str.concat(String.fromCharCode(cs[0])).concat(String.fromCharCode(cs[1])); 
 	}
 	checkBytes(str){
 		var c = this.fletcherCheckbytes(str)
-		var cs = [] 
-		cs[0] = 255-((c[0]+c[1])%255)
-		cs[1] = 255-((c[0]+cs[0])%255)
-		return cs
+		var cs = []; 
+		cs[0] = 255-((c[0]+c[1])%255);
+		cs[1] = 255-((c[0]+cs[0])%255);
+		return cs;
 	}
 	fletcherCheckbytes(str){
-		var c1 = 0
-		var c2 = 0
+		var c1 = 0;
+		var c2 = 0;
 		var bytes = []
 		for(var i = 0; i < str.length; i++){
 			var b = str[i]
@@ -106,12 +127,11 @@ class FtiRpc{
 	}
 
 	static udp(host, port, unit){
-		console.log('udp host', host)
-		console.log('udp port', port)
-		console.log('udp unit', unit)
 		return new FtiRpcUdp(host, port, unit)
 	}
-
+	trigger_fss(mode){
+		this.rpc0(5[0,1,mode])
+	}
 	/* RPC's */
 	/*version(){}
 	findUnits(){}
@@ -173,47 +193,43 @@ class FtiRpcUdp extends FtiRpc{
 		if(!host){
 			return this;
 		}
-		this.port = new FtiRpcUdpSocket(host,port) // this is not initialized 
+		this.port = new FtiRpcUdpSocket(host,port)
 	}
-
-	scope_comb_test(n, callback){
-		var ra =[]
-		var xa =[]
-		var idx 
-		var s = dgram.createSocket('udp4'); //create a udp4 socket
+	scope_comb_test(n,callback){
+		var ra =[];
+		var xa =[];
+		var idx ;
+		var s = dgram.createSocket('udp4');
 		var self = this
-		s.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){ // here we bind to a port. 0 assigns to available port
-			console.log("bind");
+		s.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
 			self.rpc0(6,[n,0]);
-			console.log('after send rpc');
-			return;
-		});
-		s.on('error', (err) => {
-		  console.log(`server error:\n${err.stack}`);
-		  server.close();
+			
 		});
 		s.on('message', function(e,rinfo){
-			console.log('receiving')
+			console.log('receiving');
 			if(e){
+				//console.log(e.byteLength)
 				idx = e.readInt16LE(0);
 				var r = e.readInt16LE(2);
 				var x = e.readInt16LE(4);
 				ra.push(r);
 				xa.push(x);
+				console.log('scope data',[r,x,idx]);
+				var scopearray = [r,x,idx];
 				if (idx == 1){
-					console.log([ra,xa]);
-					callback([ra,xa])
+					console.log(ra);
+					console.log(xa);
 					s.close();
 					s.unref();
 				}
 			}else{
 				s.close();
+
 			}
 		});
 		s.on('close', function(){
 			console.log('closing')
 			s.unref();
-			return;
 		})
 		setTimeout(function(){
 			if(idx != 1){
@@ -221,8 +237,8 @@ class FtiRpcUdp extends FtiRpc{
 			}else{
 				s.unref();
 			}
-		}, 1000); 
-		return;
+		}, 1000);
+
 	}
 	dsp_manual_test(callBack){
 		var ra =[]
@@ -243,10 +259,10 @@ class FtiRpcUdp extends FtiRpc{
 				var x = e.readInt16LE(4);
 				ra.push(r);
 				xa.push(x);
-				console.log([r,x,idx]);
+				// console.log([r,x,idx]);
 				if (idx == 1){
-					console.log(ra);
-					console.log(xa);
+					// console.log(ra);
+					// console.log(xa);
 					callBack([ra,xa]);
 					s.close();
 					s.unref();
@@ -274,20 +290,26 @@ class FtiRpcUdpSocket{
 	constructor(host,port){
 		port = port || 10001
 		this.rem_ip = host;
+		this.callBack = function(){console.log('no callback set')}
 		this.rem_port = port;
 		this.socket = dgram.createSocket('udp4');
 		this.socket.bind(0,'0.0.0.0', function(){
 			console.log('socket bound')
 		});
+		var self = this;
+
+		this.socket.on('message',function(e, rinfo){
+			self.callBack(e, rinfo)
+		})
 		return this
 	}
 	write(packet){
 		
-		console.log('writing packet')
+		console.log('writing packet'+JSON.stringify(packet))
 		this.socket.send(packet, 0, packet.length, this.rem_port, this.rem_ip, function(){
 			console.log('packet written')
 		});
-		return;
+
 	}
 	purge(){/*does nothing for udp*/}
 	getPayload(sec, callBack){
@@ -302,7 +324,7 @@ class FtiRpcUdpSocket{
 		this.socket.on('message', function(e,rinfo){
 			ack = e;
 			sender = rinfo;
-			console.log(sender)
+			//console.log(sender)
 			callBack(ack,err)
 			return;
 		})
@@ -310,9 +332,10 @@ class FtiRpcUdpSocket{
 	close(){
 		this.socket.close(function(){
 			console.log("shut down dsp")
-			return;
 		})
 	}
+
+
 }
 
 module.exports ={}

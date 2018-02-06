@@ -32,10 +32,16 @@ function GPIO()
 	var a = 1;
 	var i = 0;
 
+	setInterval(function(){blink(10)},700);
+
 	blink(10);
+
+
 	wpi.digitalWrite(11,0);		//LED off
 	wpi.digitalWrite(10, 0);	//LED off
-    setInterval(buttonpress,500);
+    setTimeout(function (){
+    	buttonpress()
+    },100);
 }
 
 function blink(LED){
@@ -43,22 +49,25 @@ function blink(LED){
 		var b = a%2;
 		a++;
 		setTimeout(function(){
-			blink(LED)
-		},300);
+			// blink(LED)
+		},1500);
 		
 		wpi.digitalWrite(LED, b);
 	}
 
 
-function buttonpress(button){
+function buttonpress(){
 	wpi.pinMode(9, wpi.INPUT); //button
 	wpi.pullUpDnControl(9, wpi.PUD_UP)
 	var button = wpi.digitalRead(9);
+
+	wpi.pinMode(8, wpi.INPUT); //button
+	wpi.pullUpDnControl(8, wpi.PUD_UP)
+	var button_close = wpi.digitalRead(8);
 	var a = 0;
 	var i = 1;
-	// console.log('button',button);
+
 	if(button == 0){ 
-		 // console.log('button',button);
 		for (i = 0; i < 5; i ++){
 			 setTimeout(function(){
 				var b = a%2;
@@ -67,23 +76,39 @@ function buttonpress(button){
 			 },100);
 			i++;
 		}
-		button = 1;
-		Fti_Locate();	
+		Fti_Locate();
+		
+		
 	}
+
+		if(button_close == 0){ 
+			for (i = 0; i < 5; i ++){
+				 setTimeout(function(){
+					var b = a%2;
+					var c = (b + 1)%2;
+					a++;
+				 	wpi.digitalWrite(11, c);	//LED off
+				 	wpi.digitalWrite(10, b);	//LED off
+				 },100);
+				i++;
+			}
+			setTimeout(function(){process.exit(-1)},2000);
+		}	
+	wpi.digitalWrite(11, 0);	//LED off
+	wpi.digitalWrite(10, 0);	//LED off
+
 	GPIO();
 }
+
+
+
 
 // ####################################################################
 // GPIO blinking 
 // ####################################################################
 function main() {
-	// wpi.setup('gpio'); //wpi-node uses pin initialization GPIO
-	// wpi.pinMode(9, wpi.INPUT); //button
-	// wpi.pullUpDnControl(9, wpi.PUD_UP)
-	// var button = wpi.digitalRead(9);
-
 	    GPIO();
-	    // exit();
+	    
 }
 
 // ####################################################################
@@ -95,22 +120,18 @@ function writer(Obj_Type,data, DataSize)
 {
 	var netinfo= [];
 	var netinfo_json= [];
-	for(var prop in data[1]){
-		    // console.log('key = ', prop);
-		    // console.log('value = ', data[0][prop]);
-		    netinfo.push(prop,data[0][prop]);
-		    netinfo_json.push(prop,data[0][prop], "\n");
-		}
-	// console.log('writer has been hit')
+	// for(var prop in data[i]){
+	// 	    // console.log('key = ', prop);
+	// 	    // console.log('value = ', data[0][prop]);
+	// 	    netinfo.push(prop,data[0][prop]);
+	// 	    netinfo_json.push(prop,data[0][prop], "\n");
+	// 	}
 	child = exec("date", function (error, stdout) {
 	  fs.appendFile(path,'\n'+stdout+Obj_Type+'\n'+netinfo+'}'+'\n',function(err){});
 	   if (error !== null) {
 	    console.log('exec error: ' + error);
 	    return;
 	  }
-	  jsonfile.writeFile(file,stdout + Obj_Type + netinfo_json, {flag: 'a'}, function (err) {
-		  console.error(err)
-		})
 	});
 }
 
@@ -119,13 +140,14 @@ function writer(Obj_Type,data, DataSize)
 // ####################################################################
 function Fti_Locate(){
 	'use strict'
-	var arloc = fti.ArmFind
-	console.log('scaning for arm devices')
+
 	var ArmLocator = arloc.ArmLocator;
-	ArmLocator.scan(3000,function (devlist) {
-		writer('devlist {',devlist,devlist[10]);
-		setTimeout(function(){process.exit(-1)},1000);
+	ArmLocator.scan(5000,function(list){
+
+		console.log('function returns no string = ' + JSON.stringify(list))
+		writer(JSON.stringify(list));
 	});
+
 }
 
 // ####################################################################

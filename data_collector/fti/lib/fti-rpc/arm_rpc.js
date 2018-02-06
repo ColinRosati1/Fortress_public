@@ -60,7 +60,7 @@ class ArmRpcBase{
         @socket.bind('0.0.0.0', @loc_port)
 		*/
 		var self = this;
-		console.log("socket init")
+		// console.log("socket init")
 		if(this.socket){
 			this.socket.close();
 			this.socket.unref();
@@ -97,8 +97,8 @@ class ArmRpcBase{
 	send(packet, ip, port){
 		ip = ip || this.rem_ip;
 		port = port || this.rem_port;
-		console.log('port? ')
-		console.log(port)
+		// console.log('port? ')
+		// console.log(port)
 		this.socket.send(packet,0,packet.length,port,ip, function () {
 			// body...
 			console.log('sent packet!');
@@ -185,8 +185,8 @@ class ArmRpcBase{
 		var pkt = [ARM_RPC_ECHO,1,2,3]
 		this.packet_for(pkt,function(p){
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
-			console.log(p.byteLength)
-			console.log('echo')
+			// console.log(p.byteLength)
+			// console.log('echo')
 
 		})
 		
@@ -195,16 +195,17 @@ class ArmRpcBase{
 		var self = this;
 		var pkt = [ARM_RPC_ECHO,1,2,3]
 		this.packet_for(pkt,function(p){
-			console.log('from echo callback');
+			// console.log('from echo callback');
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
-			callback();
+			var payload = ['"'+ self.rem_ip+'",'+ '['+[p]+']'];
+			callback(payload);
 		})
 		return;
 	}
 	dsp_open(){
-		//this.rpc([11,5],0);
+		this.rpc([11,5],0);
 		var self = this;
-		
+		console.log('dsp_open??')
 		this.packet_for([11,5],function(p){
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
 			console.log(p.byteLength)
@@ -216,10 +217,13 @@ class ArmRpcBase{
 
 	dsp_open_cb(callback){
 		var self = this;
+		this.rpc([11,5],0);
 		this.packet_for([11,5],function(p){
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
-			// console.log(p.byteLength)
+			console.log(p.byteLength)
 			console.log('dsp_open')
+			var payload = ['"'+ self.rem_ip+'",'+ '['+[p]+']'];
+			callback(payload);
 			callback();
 		})
 		return;
@@ -236,9 +240,9 @@ class ArmRpc extends ArmRpcBase{
 		}
 		port = port || ARM_RPC_PORT;
 		loc_port = loc_port || 0;
-		console.log('port = ',port)
-		console.log('host = ',host)
-		console.log('loc_port = ',loc_port)
+		// console.log('port = ',port)
+		// console.log('host = ',host)
+		// console.log('loc_port = ',loc_port)
 
 		this.rem_ip = host
 		this.rem_port = port
@@ -271,7 +275,7 @@ class ArmRpc extends ArmRpcBase{
 			var aes = crypto.createDecipheriv('aes-128-ecb', new Buffer(self.KEY), "")
 			aes.setAutoPadding(false);
 			var k = aes.update((msg.slice(2,msg.byteLength)).toString('binary'),'binary');
-			console.log(k.length)
+			// console.log(k.length)
 			k = Buffer.concat([k,aes.final()]);
 			self.aesk = k;
 			var aesEcb = new aesjs.ModeOfOperation.ecb(self.KEY);
@@ -279,7 +283,7 @@ class ArmRpc extends ArmRpcBase{
 			
 
 			var ka = []
-			console.log('ke',ke);
+			// console.log('ke',ke);
 			for(var ko = 0; ko < ke.length; ko++){
 				ka.push(ke[ko]);
 			}
@@ -308,24 +312,19 @@ class ArmRpc extends ArmRpcBase{
 		for(var i=0;i<pad;i++){
 			parry.push(0)
 		}
-		console.log('pad size: ' + pad.toString())
+		// console.log('pad size: ' + pad.toString())
 		var bu = new Buffer(2)//[dat.length]);
 		bu.writeUInt16LE(dat.length)
 		dat = Buffer.concat([bu ,dat, new Buffer(parry)])
-		//var pkt = new Buffer([]);
+		var pkt = new Buffer([]);
 		var n = Math.floor(dat.length/bsize);
 		var en = c[0];
 		var t;
-		
-		
-	
 		var pkt = en.encrypt(dat.slice(0,bsize))
 
 		callBack(pkt)
 
 	})	
-
-		
 	}
 }
 

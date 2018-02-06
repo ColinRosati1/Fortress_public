@@ -23,11 +23,6 @@
  		// 2. DSP
  		// 3. photo eye
 
-// connectivity test from fti arm gem command:
-
-// IP recieved:
-// 	192.168.33.105 ??
-// 	192.168.33.50  my mac's second ip address
 
 // ####################################################################
 var fs = require('fs');
@@ -49,7 +44,7 @@ var child;
 const HIGH = 1;
 const LOW = 0;
 var secTimeout = 2000;
-var path = ("datafile.txt");
+var path = ("scopedatafile.txt");
 
 // ####################################################################
 // GPIO opens pins
@@ -65,7 +60,11 @@ function GPIO()
 	blink(10);
 	wpi.digitalWrite(11,0);		//LED off
 	wpi.digitalWrite(10, 0);	//LED off
-    setInterval(buttonpress,500);
+ 
+    setTimeout(function (){
+    	buttonpress()
+    },100);
+
 }
 
 function blink(LED){
@@ -84,11 +83,15 @@ function buttonpress(button){
 	wpi.pinMode(9, wpi.INPUT); //button
 	wpi.pullUpDnControl(9, wpi.PUD_UP)
 	var button = wpi.digitalRead(9);
+
+	wpi.pinMode(8, wpi.INPUT); //button
+	wpi.pullUpDnControl(8, wpi.PUD_UP)
+	var button_close = wpi.digitalRead(8);
+
 	var a = 0;
 	var i = 1;
-	// console.log('button',button);
+
 	if(button == 0){ 
-		 // console.log('button',button);
 		for (i = 0; i < 5; i ++){
 			 setTimeout(function(){
 				var b = a%2;
@@ -97,12 +100,27 @@ function buttonpress(button){
 			 },100);
 			i++;
 		}
-		button = 1;
-		Fti_Scope();	
-	}
+		Fti_Scope();
+	}	
+
+	if(button_close == 0){ 
+			for (i = 0; i < 5; i ++){
+				 setTimeout(function(){
+					var b = a%2;
+					var c = (b + 1)%2;
+					a++;
+				 	wpi.digitalWrite(11, c);	//LED off
+				 	wpi.digitalWrite(10, b);	//LED off
+				 },100);
+				i++;
+			}
+			setTimeout(function(){process.exit(-1)},2000);
+		}	
+	wpi.digitalWrite(11, 0);	//LED off
+	wpi.digitalWrite(10, 0);	//LED off
+
 	GPIO();
 }
-
 
 // ####################################################################
 // GPIO blinking 
@@ -113,8 +131,6 @@ function main() {
 	wpi.digitalWrite(11, 1);
     wpi.digitalWrite(10, 1);
     GPIO();
-    // Fti_Locate();
-  
 }
 
 // ####################################################################
@@ -126,12 +142,6 @@ function writer(Obj_Type,data, DataSize)
 {
 	var netinfo= [];
 	var netinfo_json= [];
-	for(var prop in data[1]){
-		    // console.log('key = ', prop);
-		    // console.log('value = ', data[0][prop]);
-		    netinfo.push(prop,data[0][prop]);
-		    netinfo_json.push(prop,data[0][prop], "\n");
-		}
 
 	console.log('writer has been hit')
 	child = exec("date", function (error, stdout) {
@@ -152,48 +162,7 @@ function writer(Obj_Type,data, DataSize)
 // ####################################################################
 function exit()
 {
-	// This is from another library but you need to find how to unexport form this GPIO closure
-	// wpi.teardown(10, function(){
-	// });
-	// wpi.teardown(11, function(){
-	// });
-	// wpi.teardown(40, function(){
-	// });
-}
 
-// ####################################################################
-// Locats and logs Arm scope data
-// ####################################################################
-function Fti_Locate(){
-	'use strict'
-	var arloc = fti.ArmFind
-	var ArmRpc = fti.ArmRpc;
-	var ArmConfig = fti.ArmConfig;
-	var FtiRpc = fti.Rpc.FtiRpc;
-	var dgram = require('dgram');
-
-	var dsp = FtiRpc.udp('192.168.47.20', 0,null);   //TODO Doesnt close, blocks
-	var arm= new Fti.ArmRpc.ArmRpc('192.168.47.20');	//TODO Doesnt close, blocks
-	arm.echo_cb(function(){
-	
-		arm.dsp_open_cb(function(){
-			dsp.scope_comb_test(10, function(array){
-				// writer('Scope data { ',array,array[10]);
-			});
-			setTimeout(function(){
-			dsp.close();
-			},4500)
-
-		})			
-	})
-
-	var ArmLocator = arloc.ArmLocator;
-	console.log('scaning for arm devices')
-	ArmLocator.scan(1000,function (devlist) {
-		
-		// console.log(devlist);
-		// writer('devlist {',devlist,devlist[10]);
-	});
 }
 
 // ####################################################################
@@ -207,29 +176,91 @@ function Fti_Scope(){
 	var ArmConfig = fti.ArmConfig;
 	var FtiRpc = fti.Rpc.FtiRpc;
 	var dgram = require('dgram');
-
-	var dsp = FtiRpc.udp('192.168.47.20', 0,null);   //TODO Doesnt close, blocks
-	var arm= new Fti.ArmRpc.ArmRpc('192.168.47.20');	//TODO Doesnt close, blocks
-	arm.echo_cb(function(){
-	
-		arm.dsp_open_cb(function(){
-			dsp.scope_comb_test(10, function(array){
-				// writer('Scope data { ',array,array[10]);
-			});
-			setTimeout(function(){
-			dsp.close();
-			},4500)
-
-		})			
-	})
+	var dsp = '192.168.33.45';
 
 	var ArmLocator = arloc.ArmLocator;
-	console.log('scaning for arm devices')
-	ArmLocator.scan(1000,function (devlist) {
-		
-		// console.log(devlist);
-		// writer('devlist {',devlist,devlist[10]);
+	ArmLocator.scan(5000,function(list){
+
+		console.log('function returns no string = ' + JSON.stringify(list))
+		for (var l in list){
+			console.log(' ip = ',list[l]['ip']);
+		}
+
+		var dsp = FtiRpc.udp('192.168.33.45', 0,null); 
+		dsp.scope_comb_test(3000, function(array){
+
+		});
+		// var arm= new Fti.ArmRpc.ArmRpc('192.168.33.105');	
+		// arm.echo_cb(function(array){
+		// 	console.log('you log this function', array);
+		// 	writer('scope data '+ array);
+		// 	// arm.dsp_open(function(){
+				
+		// 	// 	// 	// writer('Scope data { ',array,array[10]);
+		// 	// 	// 	console.log('Scope data { ',array);
+				
+		// 	// 	setTimeout(function(){
+		// 	// 		dsp.close();
+		// 	// 	},5000)
+		// 	// })			
+		// });
+
 	});
+
+// var Demo = new HaloDemo();
+// Demo.scan_for_dsp_board(function (e) {
+// 	var ip = e[0].ip.split('.').map(function(e){return parseInt(e)});
+// 	var nifip = e[0].nif_ip.split('.').map(function(e){return parseInt(e)});
+
+// 	if(!((ip[0] == nifip[0]) && (ip[1] == nifip[1]) && (ip[2] == nifip[2]))){
+// 		//dsp not visible
+// 		console.log('dsp not visible')
+// 		Demo.change_dsp_ip(function(){
+			
+// 			var n_ip = nifip;
+// 			var n = n_ip[3] + 1;
+// 			if(n==0||n==255){
+// 			n = 50
+// 			}
+// 			dspip = [n_ip[0],n_ip[1],n_ip[2],n].join('.');
+// 		});
+// 	}else{
+// 		dspip = ip.join('.');
+// 		console.log('dsp visible = ', dspip)
+// 	}
+// 	// body...
+// });
+
+
+
+	// var dsp = FtiRpc.udp('dsp', 0,null); 
+	// var arm= new Fti.ArmRpc.ArmRpc('192.168.33.105');	
+	// arm.echo_cb(function(array){
+	// 	console.log('you log this function', array);
+	// 	writer('scope data '+ array);
+
+	// 	// arm.dsp_open(function(){
+	// 	// 	dsp.scope_comb_test(3000, function(array){
+	// 	// 		// writer('Scope data { ',array,array[10]);
+	// 	// 		console.log('Scope data { ',array);
+	// 	// 	});
+	// 	// 	setTimeout(function(){
+	// 	// 		dsp.close();
+	// 	// 	},5000)
+	// 	// })			
+	// });
+		
+	 
+	// arm.dsp_open_cb(function(){
+	// arm.dsp_open(function(){
+	// 	dsp.scope_comb_test(3000, function(array){
+	// 		// writer('Scope data { ',array,array[10]);
+	// 		console.log('Scope data { ',array);
+	// 	});
+	// 	setTimeout(function(){
+	// 		dsp.close();
+	// 	},5000)
+	// })			
 }
 
 main();
