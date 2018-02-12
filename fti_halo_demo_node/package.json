@@ -1,0 +1,32 @@
+{
+  "name": "fti_halo_demo_node",
+  "version": "1.0.0",
+  "description": "fti flash",
+  "main": "server.js",
+  "dependencies": {
+    "aes-js": "^3.1.0",
+    "express": "^4.16.2",
+    "sleep": "^5.1.1",
+    "socket.io": "^2.0.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "test",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ColinRosati1/Fortress.git"
+  },
+  "keywords": [
+    "fti-flash",
+    "web",
+    "app"
+  ],
+  "author": "colin rosati",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ColinRosati1/Fortress/issues"
+  },
+  "homepage": "https://github.com/ColinRosati1/Fortress#readme"
+}

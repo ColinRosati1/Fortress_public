@@ -11,7 +11,7 @@ const LOC_TYPE_DISCOVER = 4;
 function LocatorClient(){
 	var sender = {};
 	var listener = {};
-	var nif;
+	var nif; 
 }
 LocatorClient.prototype ={
 	listener: function(s){
@@ -35,7 +35,6 @@ LocatorClient.prototype ={
 		return this.nif;
 	},
 	discover_query: function() {
-		// body...
 		var port = this.listener.address().port;
 		var ip = this.listener.address().address;
 		var pkt = [LOC_TYPE_DISCOVER,8,this.mac_addr(), port & 0xff, port >> 8]
@@ -46,21 +45,17 @@ LocatorClient.prototype ={
 		return ((this.nif && this.nif.mac) || [0,0,0,0,0,0])
 	},
 	send_query: function() {
-		// body...
 		var dq = this.discover_query();
-		//console.log(dq.length);
+		console.log('dq length=',dq.length);
 		var sender = this.sender
 		sender.send(dq, 0, dq.length, 27182, '255.255.255.255', function () {
-			// body...
 			console.log('query sent')
 		} );
 	},
 	receive_data: function(data) {
-		// body...
-		//console.log(data.toString())
+		console.log('receive data = ',data.toString())
 	},
 	local_port_ip: function() {
-		// body...
 		console.log(this.listener.address().address)
 		console.log(this.listener.address().port)
 	},
@@ -68,77 +63,54 @@ LocatorClient.prototype ={
 
 class ArmLocator{
 	static scan(secTimeout, callBack){
-		var list = NetInterface.find(/^Ethernet|^en/);
+		var list = NetInterface.find(/^Ethernet|^en|^eth/);
 		var devlist=[];
 		var listeners = [];
 		var senders = [];
-			list.forEach(function(nif,i){
-				var listenerClient = new LocatorClient();;
-				var senderClient = new LocatorClient();;
-				senders[i] = dgram.createSocket('udp4');
-				senders[i].bind(0, nif.ip , function() { senders[i].setBroadcast(true) 
-				
-				} );
-				senders[i].on('error', function(err) {
-				  console.log(err);
-				});
-				senders[i].on('message', function(msg,rinfo){
-					//console.log('msg');
-					//console.log(msg);
-				});
-
-				listeners[i] = dgram.createSocket('udp4');
-				var dev;
-				listeners[i].bind(0,'', function() {
-				  
-				  //listener.setBroadcast(true);
-				  listenerClient.listener(listeners[i]);
-				  listenerClient.sender(senders[i]);
-				  //console.log(sender.address().address);
-				  //listenerClient.local_port_ip();
-				  //listenerClient.sender().send(packed,0,packed.length,27182, '255.255.255.255' )
-				  listenerClient.net_if(nif);
-
-				  //console.log(listenerClient.discover_query());
-				  
-				  
-				});
-				listeners[i].on('listening', function(){
-					listenerClient.send_query();
-				});
-				listeners[i].on('message', function(msg, rinfo) {
-				  //console.log(msg);
-				 // console.log(rinfo)
-				  listenerClient.receive_data(msg);
-				  dev = new ArmDev(msg, nif.ip)
-				  //listener.close();
-				  devlist.push(dev);
-				});
-
-
-				//sender.send(packed,0,packed.length,27182, '255.255.255.255' );
-				//setTimeout(1000, console.log(listenerClient.local_port_ip()));
-				//sender.send
-			
-
+		list.forEach(function(nif,i){
+			var listenerClient = new LocatorClient();;
+			var senderClient = new LocatorClient();;
+			senders[i] = dgram.createSocket('udp4');
+			senders[i].bind(0, nif.ip , function() { senders[i].setBroadcast(true) 
+			console.log('listener',listenerClient);
+			} );
+			senders[i].on('error', function(err) {
+			  console.log(err);
 			});
-	
+			senders[i].on('message', function(msg,rinfo){
+				console.log('msg');
+				console.log(msg);
+			});
+
+			listeners[i] = dgram.createSocket('udp4');
+			var dev;
+			listeners[i].bind(0,'', function() {
+			  listenerClient.listener(listeners[i]);
+			  listenerClient.sender(senders[i]);
+			  listenerClient.net_if(nif);
+			});
+			listeners[i].on('listening', function(){
+				listenerClient.send_query();
+			});
+			listeners[i].on('message', function(msg, rinfo) {
+			  listenerClient.receive_data(msg);
+			  dev = new ArmDev(msg, nif.ip);
+			  devlist.push(dev);
+			});
+
 			setTimeout(function(){
-					//console.log(dev);
-					listeners.forEach(function(s){
-						s.unref();
-					});
-					senders.forEach(function(s){
-						s.unref();
-					})
-					callBack(devlist)
-					//devlist.push(dev);
-				}, secTimeout)
-		
-		//console.log(devlist)
-		
+				listeners.forEach(function(s){
+					s.unref();
+				});
+				senders.forEach(function(s){
+					s.unref();
+				})
+				callBack(devlist)
+			}, secTimeout)
+		});		
 	}
 }
+
 class ArmDev{
 	constructor(data, nif_ip){
 		this.nif_ip = nif_ip
@@ -246,7 +218,7 @@ class ArmDev{
 		return [c_mac, c_ip, c_nm, c_gw, c_mode];
 	}
 	parse_loc_data(data){
-		//console.log(data);
+		console.log(data);
 		this.board_type = data[0];
 		this.board_id = data[1];
 		//data.slice(0,2).map([this.board_type, this.board_id])

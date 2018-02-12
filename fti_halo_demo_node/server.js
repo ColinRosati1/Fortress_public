@@ -1,5 +1,13 @@
 'use strict'
 
+// import React from 'react';
+// import ReactDOM from 'react-dom';
+// import App from './components/App.jsx';
+
+// ReactDOM.render(<App />, document.getElementById('root'));
+
+// var React = require('react');
+// var ReactDom = require('react-dom');
 var fti = require('./fti-flash-node/index.js');
 var fs = require('fs');
 var path = require('path');
@@ -14,6 +22,17 @@ var ArmRpc = fti.ArmRpc;
 var ArmConfig = fti.ArmConfig;
 var FtiRpc = fti.Rpc.FtiRpc;
 var dgram = require('dgram');
+var Fti = require('./fti-flash-node');
+
+var NetInterface = require('./fti-flash-node/lib/fti-rpc/net-interface.js');
+var ds = require('.//fti-flash-node/lib/fti-rpc/rpc.js');
+var sys = require('util') // with OS date() ca;;
+var exec = require('child_process').exec; //writing IO file 
+// var jsonfile = require('jsonfile')
+// var _ = require('lodash');
+
+const test_ip = "192.168.10.50"
+var nif_ip = "192.168.10.50"
 
 const HOST_NIF_MAC = "98:5a:eb:c9:1d:d5";
 const HALO_TEST_DELAY = 1;
@@ -31,9 +50,58 @@ const KAPI_IBTEST_PASSES_FE_WRITE = 212
 const KAPI_IBTEST_PASSES_NFE_WRITE = 216
 const KAPI_IBTEST_PASSES_SS_WRITE = 220 
 
+class FtiHelper {
+  constructor(ip){
+  	
+
+  }
+
+  get_interface_ip(mac){
+    var host_mac = mac.split(/[-]|[:]/).map(function(e){
+      return parseInt("0x"+e);
+    }) 
+  }
+  change_dsp_ip(callBack){
+    var self = this;
+    this.scan_for_dsp_board(function(e){
+      console.log(e)
+      callBack(e);
+      self.send_ip_change(e)
+    })
+  }
+  scan_for_dsp_board(callBack){
+
+    arloc.ArmLocator.scan(1500, function(e){
+      console.log(e)
+      callBack(e)
+    })
+  }
+  send_ip_change(e){
+    var ds;
+    console.log(e)
+    e.forEach(function(board){
+      console.log(board)
+      if(board.board_type == 1){
+        ds = board
+      }
+    })
+    var nifip = ds.nif_ip
+    var ip = nifip.split('.').map(function(e){return parseInt(e)});
+    var n = ip[3] + 1;
+    if(n==0||n==255){
+      n = 50
+    }
+    var new_ip = [ip[0],ip[1],ip[2],n].join('.');
+    var querystring = "mac:" + ds.mac+ ", mode:static, ip:" + new_ip + ", nm:255.255.255.0"
+    console.log(querystring)
+    ArmConfig.parse(querystring);
+
+  }
+}
+
 class HaloDemo{
 	constructor(ip){
-		/*if(ip){
+		if(ip){
 			this.host_ip = ip.split('.').map(function(e){
 				return parseInt(e);
 			})
@@ -42,8 +110,7 @@ class HaloDemo{
 				this.get_interface_ip(HOST_NIF_MAC);	
 			}
 			
-		}*/
-
+		}
 	}
 
 	get_interface_ip(mac){
@@ -54,44 +121,59 @@ class HaloDemo{
 	change_dsp_ip(callBack){
 		var self = this;
 		this.scan_for_dsp_board(function(e){
-			callBack(e);
+			callBack(e)
 			self.send_ip_change(e)
 		})
 	}
 	scan_for_dsp_board(callBack){
 
-		arloc.ArmLocator.scan(1000, function(e){
-			
-			callBack(e)
-		})
+		arloc.ArmLocator.scan(1500, function(e){
+      		console.log(e)
+    })
 	}
+
  	send_ip_change(e){
 		var ds;
 		e.forEach(function(board){
 			if(/^DETECTOR/.test(board.name)){
 				ds = board
+				ds = new Objrvt
+				nif_ip = "192.168.10.50"
+				ds.nif_ip;
+
+				var nifip = ds.nif_ip
+				var ip = nifip.split('.').map(function(e){return parseInt(e)});
+				var n = ip[3] + 1;
+				if(n==0||n==255){
+					n = 50
+				}
+				var new_ip = [ip[0],ip[1],ip[2],n].join('.');
+				var querystring = "mac:" + e[0].mac+ ", mode:static, ip:" + new_ip + ", nm:255.255.255.0"
+				ArmConfig.parse(querystring);
 			}
 		})
-		var nifip = ds.nif_ip
-		var ip = nifip.split('.').map(function(e){return parseInt(e)});
-		var n = ip[3] + 1;
-		if(n==0||n==255){
-			n = 50
-		}
-		var new_ip = [ip[0],ip[1],ip[2],n].join('.');
-		var querystring = "mac:" + e[0].mac+ ", mode:static, ip:" + new_ip + ", nm:255.255.255.0"
-		ArmConfig.parse(querystring);
+
+		// var nifip = ds.nif_ip
+		// var ip = nifip.split('.').map(function(e){return parseInt(e)});
+		// var n = ip[3] + 1;
+		// if(n==0||n==255){
+		// 	n = 50
+		// }
+		// var new_ip = [ip[0],ip[1],ip[2],n].join('.');
+		// var querystring = "mac:" + e[0].mac+ ", mode:static, ip:" + new_ip + ", nm:255.255.255.0"
+		// ArmConfig.parse(querystring);
 
 	}
+
 	test_fti_rpc(){
-		var dsp = FtiRpc.udp('192.168.5.56');
+		var dsp = FtiRpc.udp('192.168.10.50');
 		dsp.scope_comb_test(3*231);
 	}
 
 
 }
 
-
+ 
 
 app.set('port', (process.env.PORT || 4000));
 
@@ -149,7 +231,7 @@ setTimeout(function(){
 	})*/
 	
 },100)
-/*setTimeout(function(){
+setTimeout(function(){
 	arm.init_session_key(function(e,d){
 		console.log('echo block')
 		arm.enc = e;
@@ -165,14 +247,14 @@ setTimeout(function(){
 		
 	});
 	
-},100);*/
+},100);
 
 setTimeout(function(){
 var dsp = FtiRpc.udp(dspip);
-/*dsp.dsp_manual_test(function(d){
+dsp.dsp_manual_test(function(d){
 	console.log(d);
 });
-console.log(dsp);*/
+console.log(dsp);
 
 
  var dummy =  [{"y":[400,402,402,402,400,400,401,400,402,401,400,403,401,399,402,400,402,401,400,401,400,401,401,402,401,401,402,402,399,
@@ -326,20 +408,169 @@ io.on('connection', function(socket){
 }, 3000)
 },3000);
 
-//Demo.change_dsp_ip();
-//setTimeout(function(){Demo.scan}, 
-//var fti = require('./index.js');
+Demo.scan_for_dsp_board();
+// Demo.change_dsp_ip(function(host_ip){});
+setTimeout(function(){Demo.scan}); 
 
+var fti = require('./fti-flash-node/index.js');
+console.log(pk);
+Fti_Locate();
+// var test = new TestRunner();
 
-
-/*
-//var test = new TestRunner();
-
-//var KEY = [138, 23, 225,  96, 151, 39,  79,  57, 65, 108, 240, 251, 252, 54, 34,  87];
+var KEY = [138, 23, 225,  96, 151, 39,  79,  57, 65, 108, 240, 251, 252, 54, 34,  87];
 		var bsize = KEY.length;
 		var pk = [3, bsize]
 		for(var i = 0; i<bsize; i++){
 			pk.push(0);
 		}
-//console.log(pk);*/
 
+// console.log(pk);
+// Fti_Locate();
+
+// ==============================================================================
+// Colins locate and scope additions
+// ==============================================================================
+
+// ####################################################################
+// writer() writes data to file
+//async method nesting the file writing function inside of this function
+//must nest callback in order for stack to move out of scope
+// ####################################################################
+function writer(Obj_Type,data, DataSize)
+{
+	// var netinfo= [];
+	// var netinfo_json= [];
+	// var child;
+	// for(var prop in data[1]){
+	// 	    // console.log('key = ', prop);
+	// 	    // console.log('value = ', data[0][prop]);
+	// 	    netinfo.push(prop,data[0][prop]);
+	// 	    netinfo_json.push(prop,data[0][prop], "\n");
+	// 	}
+
+	// console.log('writer has been hit')
+	// child = exec("date", function (error, stdout) {
+	//   fs.appendFile(path,'\n'+stdout+Obj_Type+'\n'+netinfo+'}'+'\n',function(err){});
+	//    if (error !== null) {
+	//     console.log('exec error: ' + error);
+	//     return;
+	//   }
+
+	//   jsonfile.writeFile(file,stdout + Obj_Type + netinfo_json, {flag: 'a'}, function (err) {
+	// 	  console.error(err)
+	// 	})
+	// });
+}
+
+
+
+
+function Fti_Locate(){
+	'use strict'
+	var arloc = fti.ArmFind
+	var ArmRpc = fti.ArmRpc;
+	var ArmConfig = fti.ArmConfig;
+	var FtiRpc = fti.Rpc.FtiRpc;
+	var dgram = require('dgram');
+
+	var dsp = FtiRpc.udp('192.168.47.23', 0,null);   //TODO Doesnt close, blocks
+	var arm= new Fti.ArmRpc.ArmRpc('192.168.47.23');	//TODO Doesnt close, blocks
+	arm.echo_cb(function(){
+	
+		arm.dsp_open_cb(function(){
+			dsp.scope_comb_test(1, function(array){
+				writer('Scope data { ',array,array[10]);
+			});
+			setTimeout(function(){
+			dsp.close();
+			},4500)
+
+		})			
+	})
+
+	var ArmLocator = arloc.ArmLocator;
+	console.log('scaning for arm devices')
+	ArmLocator.scan(1000,function (devlist) {
+		
+		console.log("this is your devices available",devlist);
+		writer('devlist {',devlist,devlist[10]);
+	});
+
+}
+
+// ####################################################################
+// Scan lookds for DSP boards
+//from arm_find.js
+// ####################################################################
+function scan(secTimeout, callBack){
+	var list = NetInterface.find(/^Ethernet|^en/);
+	var devlist=[];
+	var listeners = [];
+	var senders = [];
+	console.log('Scanning ...')
+		list.forEach(function(nif,i){
+			var listenerClient = new LocatorClient();;
+			var senderClient = new LocatorClient();;
+			senders[i] = dgram.createSocket('udp4');
+			senders[i].bind(0, nif.ip , function() { senders[i].setBroadcast(true) 
+			
+			} );
+			senders[i].on('error', function(err) {
+			  console.log(err);
+			});
+			senders[i].on('message', function(msg,rinfo){
+				console.log('msg');
+				console.log(msg);
+			});
+
+			listeners[i] = dgram.createSocket('udp4');
+			var dev;
+			listeners[i].bind(0,'', function() {s
+			  listener.setBroadcast(true);
+			  listenerClient.listener(listeners[i]);
+			  listenerClient.sender(senders[i]);
+			  console.log(sender.address().address);
+			  listenerClient.local_port_ip();
+			  listenerClient.sender().send(packed,0,packed.length,27182, '255.255.255.255' )
+			  listenerClient.net_if(nif);
+			  console.log(listenerClient.discover_query());
+    		  console.log(dev);
+			  
+			});
+			listeners[i].on('listening', function(){
+				listenerClient.send_query();
+			});
+			listeners[i].on('message', function(msg, rinfo) {
+			  console.log(msg);
+			  console.log(rinfo)
+			  listenerClient.receive_data(msg);
+			  dev = new ArmDev(msg, nif.ip);
+			  devlist.push(dev);
+			  //listener.close();
+			});
+
+			sender.send(packed,0,packed.length,27182, '255.255.255.255' );
+			setTimeout(1000, console.log(listenerClient.local_port_ip()));
+			sender.send
+			
+			setTimeout(function(){
+				console.log(dev);
+				listeners.forEach(function(s){
+					s.unref();
+				});
+				senders.forEach(function(s){
+					s.unref();
+				})
+				callBack(devlist)
+				devlist.push(dev);
+			}, secTimeout)
+		});
+	for(i = 0; i < 1; i++){
+		console.log(listeners[i]);
+	}
+	console.log('devlist',devlist);
+	return devlist;
+}
+
+
+module.exports = new FtiHelper();
