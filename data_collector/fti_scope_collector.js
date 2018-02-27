@@ -173,8 +173,9 @@ function Fti_Locate(){
 
 	// var ArmLocator = arloc.ArmLocator;
 	arloc.ArmLocator.scan(1500,function(list){
-		console.log('function returns = ' + JSON.stringify(list))
+		//console.log('function returns = ' + JSON.stringify(list))
 		writer(JSON.stringify(list));
+		return (list);
 	});
 
 }
@@ -188,21 +189,26 @@ function Fti_Scope(){
 	var FtiRpc = fti.Rpc.FtiRpc;
     var arm = new Fti.ArmRpc.ArmRpc(dspip);
     var self = this;
-    Fti_Locate();
+
+	// Fti_Locate();
+
+    var port = 10001
+    var dsp = FtiRpc.udp(port);
+
     console.log("now echo")
+    var pk =  "MY PACKET"
     arm.echo_cb(function(array){
       console.log("echoed")
-      // console.log(array);
+      console.log(array);
       arm.dsp_open_cb(function(pl){
-        console.log('dspn open payload = ',pl)
+        // console.log('dspn open payload = ',pl)
         arm.bindSo(dspip)
         setTimeout(function(){
            arm.bindNP(dspip)
           //  setTimeout(function(pk){
-	         //   FtiRpc.scope_comb_test(20,pk)
+	     		arm.init_net_poll_events(0)
 	         // },5000);
          },5000);
-       
       })
     });
 

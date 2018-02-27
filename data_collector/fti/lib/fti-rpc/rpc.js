@@ -28,6 +28,12 @@ class FtiRpc{
 	// 	// 	console.log('packet written')
 	// 	// });
 	// }
+	write(packet){
+		console.log('writing packet'+JSON.stringify(packet))
+		this.socket.send(packet, 0, packet.length, this.rem_port, this.rem_ip, function(){
+			console.log('packet written = ', packet)
+		});
+	}
 
 	rpc_n(func,args,string,timeout,callBack){
 		var trys = 0;
@@ -42,11 +48,14 @@ class FtiRpc{
 
 	}
 	rpc1(func,args,string,timeout,callBack){
+		console.log("rpc1 from rcp.js")
 		var self = this
 		var payload = this.payloadForRpc(func,args,string);
 		var packet = this.frame(payload);
-		this.port.write(packet);
-		this.port.callBack = callBack;
+		// this.port.write(packet);
+		// this.port.callBack = callBack;
+		this.write(packet);
+		this.callBack = callBack;
 	}
 	rpc2(payload,callback){
 		console.log(payload)
@@ -63,8 +72,10 @@ class FtiRpc{
 		var payload = this.payloadForRpc(func,args,string);
 		console.log(payload)
 		var packet = this.frame(payload);
-		this.port.write(packet);
-		this.port.callBack = function(){
+		// this.port.write(packet);
+		// this.port.callBack = function(){
+		this.write(packet);
+		this.callBack = function(){
 			console.log('no callBack set')
 		}
 	}
@@ -202,15 +213,19 @@ class FtiRpcUdp extends FtiRpc{
 			return this;
 		}
 		this.port = new FtiRpcUdpSocket(host,port)
+		// 	console.log(this.port)
 	}
 	scope_comb_test(n,callback){
+		console.log('scope comb test open')
 		var ra =[];
 		var xa =[];
 		var idx ;
 		var s = dgram.createSocket('udp4');
+
 		var self = this
 		s.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
-			self.rpc0(6,[n,0]);
+			var socket = self.rpc0(6,[n,0]);
+			console.log("scope comb test bound")
 			
 		});
 		s.on('message', function(e,rinfo){

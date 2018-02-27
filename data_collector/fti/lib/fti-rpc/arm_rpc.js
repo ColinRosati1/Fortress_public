@@ -11,6 +11,10 @@ const ARM_RPC_PORT = 10002
 const LCD_DISPLAY_PORT = 54005
 const LOCATOR_PORT = 27182
 const DSP_SCOPE_PORT = 10004
+const KAPI_RPC_ETHERNETIP = 100;
+const KAPI_RPC_REJ_DEL_CLOCK_READ = 70;
+const DRPC_NUMBER = 19;
+const NP_RPC = 13;
 
 const ARM_RPC_ECHO 		   =  0
 const ARM_RPC_VERSION 	   =  1
@@ -38,6 +42,58 @@ class ArmRpcErrorTimeout extends ArmRpcError{}
 class ArmRpcErrorChecksum extends ArmRpcError{}
 class ArmRpcAckError extends ArmRpcError{}
 
+/***************************************************************************************************************/
+/* Locator Functions                                                                                           */
+/***************************************************************************************************************/
+class FtiHelper{
+  constructor(ip){
+
+
+  }
+
+  get_interface_ip(mac){
+    var host_mac = mac.split(/[-]|[:]/).map(function(e){
+      return parseInt("0x"+e);
+    }) 
+  }
+  change_dsp_ip(callBack){
+    var self = this;
+    this.scan_for_dsp_board(function(e){
+      console.log(e)
+      callBack(e);
+      self.send_ip_change(e)
+    })
+  }
+  scan_for_dsp_board(callBack){
+
+    arloc.ArmLocator.scan(1500, function(e){
+      console.log(e)
+      callBack(e)
+    })
+  }
+  send_ip_change(e){
+    var ds;
+    console.log(e)
+    e.forEach(function(board){
+      console.log(board)
+      if(board.board_type == 1){
+        ds = board
+      }
+    })
+    var nifip = ds.nif_ip
+    var ip = nifip.split('.').map(function(e){return parseInt(e)});
+    var n = ip[3] + 1;
+    if(n==0||n==255){
+      n = 50
+    }
+    var new_ip = [ip[0],ip[1],ip[2],n].join('.');
+    var querystring = "mac:" + ds.mac+ ", mode:static, ip:" + new_ip + ", nm:255.255.255.0"
+    console.log(querystring)
+    ArmConfig.parse(querystring);
+
+  }
+}
+
 class ArmRpcBase{
 	constructor(host, port,loc_port){
 		if(!host){
@@ -52,6 +108,11 @@ class ArmRpcBase{
 		var self = this;
 		this.init_socket()
 		
+	}
+	setCallBack(cb){
+		this.callBack = cb;
+		// console.log("cb set")
+		// console.log(cb)
 	}
 	init_socket(){
 		/*
@@ -287,11 +348,11 @@ class ArmRpcBase{
 		var self = this;
 		this.packet_for([11,5],function(p){
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip)
-			console.log('dsp_open ;)')
+				console.log('dsp_open ;)')
 			var payload = ['"'+ self.rem_ip+'",'+ '['+[p]+']'];
 			callback(payload);
 		})
-		return;
+		// return;
 	
 	}
 
@@ -300,32 +361,100 @@ class ArmRpcBase{
     if(this.bound){
       return;
     }
+
+    // var e, rinfo;
+    var dsp = Fti.FtiRpc.udp(this.ip);
+    var ra =[];
+	var xa =[];
+	var idx ;
     var self = this;
     var so = dgram.createSocket({'type':'udp4'})
     so.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
       console.log('bound on '+ DSP_SCOPE_PORT+' 0.0.0.0 ')
+      dsp.rpc1(DRPC_NUMBER,[KAPI_RPC_ETHERNETIP,0]);
       so.on('error', (err) => {
 		console.log(`server error:\n${err.stack}`);
 		so.close();
 	  });
-      so.on('message', function(e,rinfo){
+	  so.on('message', function(e,rinfo){
+     	  console.log("my bind socket function currently has e = ",e,"and rinfo = ", rinfo)
           console.log(e)
-            console.log("socket makes it here")
           console.log('socket message sent')
           self.packetHandler(e)
+			if(e){
+				//console.log(e.byteLength)
+				idx = e.readInt16LE(0);
+				var r = e.readInt16LE(2);
+				var x = e.readInt16LE(4);
+				ra.push(r);
+				xa.push(x);
+				console.log('scope data',[r,x,idx]);
+				var scopearray = [r,x,idx];
+				if (idx == 1){
+					console.log(ra);
+					console.log(xa);
+					so.close();
+					so.unref();
+				}
+			}else{
+				so.close();
+
+			}
+		});
+		so.on('close', function(){
+			console.log('closing')
+			so.unref();
+		})
+		setTimeout(function(){
+			if(idx != 1){
+				so.close();
+				console.log('close')
+			}else{
+				so.unref();
+				console.log('unref')
+			}
+			// console.log('closed')
+		}, 8000);
+		return;
+
       })
-    });
+    // });
   }
     
   bindNP(ip){
    console.log('binding net poll')
    var self = this;
+
    console.log('net poll ip ',ip)
    var np = dgram.createSocket('udp4')
+
     np.on("listening", function () {
       console.log('net poll event = ')
       self.init_net_poll_events(np.address().port);
-      var e = 'sending this packet'
+      	
+        var dsp = Fti.FtiRpc.udp(this.ip);
+        dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_ETHERNETIP,this.port]);
+        setTimeout(function () {
+            dsp.rpc0(NP_RPC,[]);
+            setTimeout(function () {
+                            dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_REJ_DEL_CLOCK_READ]);
+            }, 100)
+        }, 100)
+        /*setInterval(function () {
+            dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_ETHERNETIP,port]);
+            setTimeout(function () {
+                            dsp.rpc0(NP_RPC,[]);
+            }, 100)
+        },10000)*/
+        np.on('message', function (message, remote) {
+           // CAN I HANDLE THE RECIVED REPLY HERE????
+            if(message.readUInt16LE(1)==KAPI_RPC_REJ_DEL_CLOCK_READ)
+            {
+            				console.log("netpoll handled?")
+                            self.record_deps["ProdRec.RejModeEmu"]=message.readUInt16LE(3);
+            }
+//                                            console.log(message);
+        });
       self.parse_net_poll_event(e);
     });
 
@@ -333,7 +462,7 @@ class ArmRpcBase{
 			  console.log(err);
 			});
 
-    var e = 'sending this packet'
+    var e ;
     np.on('message', function(e,rinfo){
       if (e !== 1){
       	console.log('what is e = ',e)
@@ -348,7 +477,7 @@ class ArmRpcBase{
 				var x = e.readInt16LE(4);
 				ra.push(r);
 				xa.push(x);
-				// console.log([r,x,idx]);
+				console.log([r,x,idx]);
 				if (idx == 1){
 					// console.log(ra);
 					// console.log(xa);
@@ -372,24 +501,35 @@ class ArmRpcBase{
     np.bind({address: '0.0.0.0',port: 0,exclusive: true});
   	
   	return np
-    // ({np:np})
+    // ({np:np})	
   }
 
-  init_net_poll_events( port){
-  	var dsp = Fti.FtiRpc.udp(port);
-  	console.log('init net poll')
-    var self = this;
-    dsp.rpc1(19,[10001,port], "",1.0, function(e, r){
-    	dsp.scope_comb_test(20,pk)
-      console.log("rpc1 opened ",e,r)
-    });
-    // var pk;
+  init_net_poll_events(port){
+        // var FtiRpc = Rpc.FtiRpc;
+        console.log('init net poll')
+        var self = this;
+        var dsp = Fti.FtiRpc.udp(this.ip);
+        console.log(port)
 
-    // setTimeout(function(pk){
-    //    dsp.dsp_manual_test(pk)
-    // },500);
-    
-  }
+        var np = dgram.createSocket('udp4')
+        dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_ETHERNETIP,port]);
+        // setTimeout(function () {
+        //     dsp.rpc0(NP_RPC,[]);
+        //     setTimeout(function () {
+        //         dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_REJ_DEL_CLOCK_READ]);
+        //         console.log( "dsp rpc0 opened")
+        //     }, 200)
+        // }, 200)
+   
+        np.on('message', function (message, remote) {
+           // CAN I HANDLE THE RECIVED REPLY HERE????
+            if(message.readUInt16LE(1)==KAPI_RPC_REJ_DEL_CLOCK_READ)
+            {
+            	console.log("netpoll handled?")
+                self.record_deps["ProdRec.RejModeEmu"]=message.readUInt16LE(3);
+            }
+        });
+    }
 
   parse_net_poll_event(buf){
     // var key = buf.readUInt16LE(0);
@@ -397,10 +537,10 @@ class ArmRpcBase{
 
     var res = "";
     var self = this;
-    console.log("packet received: " + buf.toString('hex'));
+    // console.log("packet received: " + buf.toString('hex'));
 //    console.log("Key: " + "0x" + key.toString(16));
     // var value = buf.readUInt16LE(2);
-     var value = buf;
+   	var value = buf;
     if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
         console.log('PROD_REC_VAR')
         console.log(buf.slice(9).toString())

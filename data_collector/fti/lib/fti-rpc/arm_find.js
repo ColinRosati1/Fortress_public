@@ -84,9 +84,10 @@ class ArmLocator{
 			listeners[i] = dgram.createSocket('udp4');
 			var dev;
 			listeners[i].bind(0,'', function() {
-			  listenerClient.listener(listeners[i]);
-			  listenerClient.sender(senders[i]);
-			  listenerClient.net_if(nif);
+				  listeners[i].setBroadcast(true);
+				  listenerClient.listener(listeners[i]);
+				  listenerClient.sender(senders[i]);
+				  listenerClient.net_if(nif);
 			});
 			listeners[i].on('listening', function(){
 				listenerClient.send_query();
@@ -113,8 +114,9 @@ class ArmLocator{
 					s.unref();
 				})
 				// callBack(list);
+				return
 			}, secTimeout)
-			// return list;
+			return;
 			
 		});		
 	}
