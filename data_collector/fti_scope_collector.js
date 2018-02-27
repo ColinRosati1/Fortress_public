@@ -2,27 +2,26 @@
 // uses BCM pinout
 // data_collector.js uses FTI Flash calls to:
 //		* scan available detectors
-// 		* netpoll
 // 		* log data from scope, log scan
-
-
-// TODO use Dan's app to look out how scope data is handled, model that
 
 // TODO connect head to photo eye and test data, ask Bin for help
 // how to connect a photo eye scope???
 	// -what is a scope?
 	// 	scope is the range of data from a stream of current coming from a photo eye.
-
 	// -photo eye: 
 	// A photoelectric sensor, or photo eye, is an equipment used to discover the distance, absence, or presence
- // 	of an object by using a light transmitter, often infrared, and a photoelectric receiver.
- // 	-output a stream of measurable voltage
+ 	// of an object by using a light transmitter, often infrared, and a photoelectric receiver.
+ 	// -output a stream of measurable voltage
 
  // connect to 3 ARM devices locally through ethernet cables via fti_scope 
  		// 1. Stealth head, or whatever head
  		// 2. DSP
  		// 3. photo eye
 
+ 	// TODO clean up scope scan functions
+ 			// is is just scope_comb_test()?
+ 			// what is arm.echo_cb()?
+ 			// what is halo scan_for_dsp_board()?
 
 // ####################################################################
 var fs = require('fs');
@@ -101,6 +100,7 @@ function buttonpress(button){
 			i++;
 		}
 		Fti_Scope();
+		// interceptor();
 	}	
 
 	if(button_close == 0){ 
@@ -143,7 +143,7 @@ function writer(Obj_Type,data, DataSize)
 	var netinfo= [];
 	var netinfo_json= [];
 
-	console.log('writer has been hit')
+	// console.log('writer has been hit')
 	child = exec("date", function (error, stdout) {
 	  fs.appendFile(path,'\n'+stdout+Obj_Type+'\n'+netinfo+'}'+'\n',function(err){});
 	   if (error !== null) {
@@ -166,101 +166,50 @@ function exit()
 }
 
 // ####################################################################
+// Locats and logs Arm scope data
+// ####################################################################
+function Fti_Locate(){
+	'use strict'
+
+	// var ArmLocator = arloc.ArmLocator;
+	arloc.ArmLocator.scan(1500,function(list){
+		console.log('function returns = ' + JSON.stringify(list))
+		writer(JSON.stringify(list));
+	});
+
+}
+
+// ####################################################################
 //  Arm scope data
 
 // ####################################################################
 function Fti_Scope(){
-	'use strict'
-	var arloc = fti.ArmFind
-	var ArmRpc = fti.ArmRpc;
-	var ArmConfig = fti.ArmConfig;
+	var dspip = "192.168.33.50"
 	var FtiRpc = fti.Rpc.FtiRpc;
-	var dgram = require('dgram');
-	var dsp = '192.168.33.45';
+    var arm = new Fti.ArmRpc.ArmRpc(dspip);
+    var self = this;
+    Fti_Locate();
+    console.log("now echo")
+    arm.echo_cb(function(array){
+      console.log("echoed")
+      // console.log(array);
+      arm.dsp_open_cb(function(pl){
+        console.log('dspn open payload = ',pl)
+        arm.bindSo(dspip)
+        setTimeout(function(){
+           arm.bindNP(dspip)
+          //  setTimeout(function(pk){
+	         //   FtiRpc.scope_comb_test(20,pk)
+	         // },5000);
+         },5000);
+       
+      })
+    });
 
-	var ArmLocator = arloc.ArmLocator;
-	ArmLocator.scan(5000,function(list){
+	// haloTest();
 
-		console.log('function returns no string = ' + JSON.stringify(list))
-		for (var l in list){
-			console.log(' ip = ',list[l]['ip']);
-		}
-
-		var dsp = FtiRpc.udp('192.168.33.45', 0,null); 
-		dsp.scope_comb_test(3000, function(array){
-
-		});
-		// var arm= new Fti.ArmRpc.ArmRpc('192.168.33.105');	
-		// arm.echo_cb(function(array){
-		// 	console.log('you log this function', array);
-		// 	writer('scope data '+ array);
-		// 	// arm.dsp_open(function(){
-				
-		// 	// 	// 	// writer('Scope data { ',array,array[10]);
-		// 	// 	// 	console.log('Scope data { ',array);
-				
-		// 	// 	setTimeout(function(){
-		// 	// 		dsp.close();
-		// 	// 	},5000)
-		// 	// })			
-		// });
-
-	});
-
-// var Demo = new HaloDemo();
-// Demo.scan_for_dsp_board(function (e) {
-// 	var ip = e[0].ip.split('.').map(function(e){return parseInt(e)});
-// 	var nifip = e[0].nif_ip.split('.').map(function(e){return parseInt(e)});
-
-// 	if(!((ip[0] == nifip[0]) && (ip[1] == nifip[1]) && (ip[2] == nifip[2]))){
-// 		//dsp not visible
-// 		console.log('dsp not visible')
-// 		Demo.change_dsp_ip(function(){
 			
-// 			var n_ip = nifip;
-// 			var n = n_ip[3] + 1;
-// 			if(n==0||n==255){
-// 			n = 50
-// 			}
-// 			dspip = [n_ip[0],n_ip[1],n_ip[2],n].join('.');
-// 		});
-// 	}else{
-// 		dspip = ip.join('.');
-// 		console.log('dsp visible = ', dspip)
-// 	}
-// 	// body...
-// });
-
-
-
-	// var dsp = FtiRpc.udp('dsp', 0,null); 
-	// var arm= new Fti.ArmRpc.ArmRpc('192.168.33.105');	
-	// arm.echo_cb(function(array){
-	// 	console.log('you log this function', array);
-	// 	writer('scope data '+ array);
-
-	// 	// arm.dsp_open(function(){
-	// 	// 	dsp.scope_comb_test(3000, function(array){
-	// 	// 		// writer('Scope data { ',array,array[10]);
-	// 	// 		console.log('Scope data { ',array);
-	// 	// 	});
-	// 	// 	setTimeout(function(){
-	// 	// 		dsp.close();
-	// 	// 	},5000)
-	// 	// })			
-	// });
-		
-	 
-	// arm.dsp_open_cb(function(){
-	// arm.dsp_open(function(){
-	// 	dsp.scope_comb_test(3000, function(array){
-	// 		// writer('Scope data { ',array,array[10]);
-	// 		console.log('Scope data { ',array);
-	// 	});
-	// 	setTimeout(function(){
-	// 		dsp.close();
-	// 	},5000)
-	// })			
 }
+
 
 main();

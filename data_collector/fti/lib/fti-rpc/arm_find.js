@@ -1,7 +1,6 @@
 'use strict';
 
 var NetInterface = require('./net-interface.js');
-var NetInterface_scope = require('./net-interface.js');
 var dgram = require('dgram');
 var BufferPack = require('bufferpack');
 
@@ -64,7 +63,8 @@ LocatorClient.prototype ={
 
 class ArmLocator{
 	static scan(secTimeout, callBack){
-		var list = NetInterface_scope.find(/^Ethernet|^en|^eth/);
+		var list = NetInterface.find(/^Ethernet|^en|^eth/);
+		console.log('arloc list = ',list)
 		var devlist=[];
 		var listeners = [];
 		var senders = [];
@@ -78,7 +78,7 @@ class ArmLocator{
 			  console.log(err);
 			});
 			senders[i].on('message', function(msg,rinfo){
-				console.log('sender messafe = ',msg);
+				// console.log('sender messafe = ',msg);
 			});
 
 			listeners[i] = dgram.createSocket('udp4');
@@ -96,10 +96,15 @@ class ArmLocator{
 			  dev = new ArmDev(msg, nif.ip);
 			  devlist.push(dev);
 			  var scope_data = dev.extract_loc_data(msg);
-			  return scope_data ;
+			  // return scope_data ;
+			 
+			  setTimeout(function(){
+				// console.log(dev.extract_loc_data(msg) );
+				callBack(scope_data);
+			   }, secTimeout);
 			});
 			
-			callBack(list);
+			// callBack(list);
 			setTimeout(function(){
 				listeners.forEach(function(s){
 					s.unref();
@@ -107,8 +112,9 @@ class ArmLocator{
 				senders.forEach(function(s){
 					s.unref();
 				})
+				// callBack(list);
 			}, secTimeout)
-			return list;
+			// return list;
 			
 		});		
 	}
@@ -116,67 +122,7 @@ class ArmLocator{
 
 }
 
-class ScopeLocator{
-	static scan(secTimeout, callBack){
-		var list = NetInterface_scope.find(/^Ethernet|^en|^eth/);
-		var devlist=[];
-		var listeners = [];
-		var senders = [];
-		list.forEach(function(nif,i){
-			var listenerClient = new LocatorClient();;
-			var senderClient = new LocatorClient();;
-			senders[i] = dgram.createSocket('udp4');
-			senders[i].bind(0, nif.ip , function() { senders[i].setBroadcast(true) 
-			} );
-			senders[i].on('error', function(err) {
-			  console.log(err);
-			});
-			senders[i].on('message', function(msg,rinfo){
-				console.log('sender messafe = ',msg);
-			});
 
-			listeners[i] = dgram.createSocket('udp4');
-			var dev;
-			listeners[i].bind(0,'', function() {
-			  listenerClient.listener(listeners[i]);
-			  listenerClient.sender(senders[i]);
-			  listenerClient.net_if(nif);
-			});
-			listeners[i].on('listening', function(){
-				listenerClient.send_query();
-			});
-			listeners[i].on('message', function(msg, rinfo) {
-			  listenerClient.receive_data(msg);
-			  dev = new ArmDev(msg, nif.ip);
-			  // console.log('when I return dev.extract_loc_data = ', dev.extract_loc_data(msg));
-			  devlist.push(dev);
-			  var scope_data = dev.extract_loc_data(msg);
-			  // console.log('we hit the scope constructor call to return scope data directly below this'); 
-			  console.log(scope_data);
-			  return scope_data ;
-			  
-			  callBack(scope_data);
-			  
-			//   setTimeout(function(){
-			// 	callBack(dev.extract_loc_data(msg));
-			// 	return scope_data;
-			// }, 2000)
-
-			});
-
-			setTimeout(function(){
-				listeners.forEach(function(s){
-					s.unref();
-				});
-				senders.forEach(function(s){
-					s.unref();
-				})
-				// callBack(scope_data);
-			}, secTimeout)
-		});		
-	}
-
-}
 
 class ArmDev{
 	constructor(data, nif_ip){
@@ -239,8 +185,16 @@ class ArmDev{
 		this.f_gw = fm[3];
 		this.net_mode = fm[4];
 
-		this.parse_loc_data(loc);
-		return loc;
+		
+
+		var ip_List = [this.ip]
+		// return (conf)
+
+		var parsed_data = this.parse_name(loc);
+		// console.log(parsed_data)
+		var extracted_data = [this.ip, parsed_data];
+		return extracted_data;
+		// return loc;
 	}
 
 	parse_config(config, fram){
@@ -300,9 +254,19 @@ class ArmDev{
 		this.app_name = (new Buffer(data.slice(34,-1))).toString().trim()
 		return data;
 	}	
+
+	parse_name(data){
+		// console.log(data);
+		
+		this.name = (new Buffer(data.slice(6,18))).toString().trim();
+		// this.s_key = data.slice(18,34);
+		this.s_key = data.slice(1,120);
+		this.app_name = (new Buffer(data.slice(34,-1))).toString().trim()
+		return [this.name, this.app_name, this.s_key]
+		// return data;
+	}	
 }
 
 module.exports = {}
 module.exports.ArmDev = ArmDev
 module.exports.ArmLocator = ArmLocator
-module.exports.ScopeLocator = ScopeLocator

@@ -13,13 +13,21 @@ class FtiRpc{
 		
 			this.port = new FtiRpcSocket(host,port)
 			console.log("ftirpc.new")
-			//console.log(this.port)
+			
 	}
 	close(){
 		if(this.port){
 			this.port.close();
 		}
 	}
+
+	// write(packet){
+	// 	console.log('writing packet'+JSON.stringify(packet))
+	// 	console.log('writing packet'+packet)
+	// 	// this.socket.send(packet, 0, packet.length, this.rem_port, this.rem_ip, function(){
+	// 	// 	console.log('packet written')
+	// 	// });
+	// }
 
 	rpc_n(func,args,string,timeout,callBack){
 		var trys = 0;
@@ -34,12 +42,11 @@ class FtiRpc{
 
 	}
 	rpc1(func,args,string,timeout,callBack){
+		var self = this
 		var payload = this.payloadForRpc(func,args,string);
 		var packet = this.frame(payload);
 		this.port.write(packet);
-		this.port.callBack = callBack
-		
-		
+		this.port.callBack = callBack;
 	}
 	rpc2(payload,callback){
 		console.log(payload)
@@ -63,7 +70,7 @@ class FtiRpc{
 	}
 	payloadForRpc(func,args,string){
 		var payload = [func]//String.fromCharCode(func)
-		
+		// console.log('payloadForRpc payload=', payload)
 		var argByte = args.length%4
 		if(string){
 			payload.push(argByte + 4)
@@ -81,11 +88,10 @@ class FtiRpc{
 		if(string){
 			//	string = new Buffer(string); not going to deal with this yet
 		}
-		
-		
 		payload = this.addCheckSum(payload);
-		
-		return new Buffer(payload);
+		console.log('payloadForRpc payload=',payload)
+		return new Buffer(payload); // must send payload as a buffer array of octet
+		// return (payload); // must send payload as a buffer array of octet
 
 	}
 	addCheckSum(str){
@@ -122,7 +128,9 @@ class FtiRpc{
 	frame(string){
 		//for udp not required...
 		//will implement for non-udp in the future
+		// console.log("packet from frame =" + JSON.stringify(string));
 		return string
+		// return 
 		//var pak =
 	}
 
@@ -234,10 +242,14 @@ class FtiRpcUdp extends FtiRpc{
 		setTimeout(function(){
 			if(idx != 1){
 				s.close();
+				console.log('close')
 			}else{
 				s.unref();
+				console.log('unref')
 			}
-		}, 1000);
+			// console.log('closed')
+		}, 8000);
+		return;
 
 	}
 	dsp_manual_test(callBack){
@@ -284,6 +296,38 @@ class FtiRpcUdp extends FtiRpc{
 			}
 		}, 1000);
 	}
+
+
+	haloTest (t){
+	    console.log(t)
+	    var dsp = this.state.dsp;
+	    if(t == 0){
+	     dsp.rpc0(6,[3*231,5,1]);
+	    }else if(t == 1){
+	      this.setHaloParams(1,0,0, function(){
+	         dsp.rpc0(6,[3*231,3,1]);
+	          setTimeout(function(){
+	            dsp.rpc0(KERN_API_RPC, [KAPI_RPC_TEST, 1]);
+	            console.log('testing')
+	          }, HALO_TEST_DELAY*1000)
+
+	      })
+	    }else if(t == 2){
+	       this.setHaloParams(0,1,0, function(){
+	         dsp.rpc0(6,[3*231,3,1]);
+	          setTimeout(function(){
+	            dsp.rpc0(KERN_API_RPC, [KAPI_RPC_TEST, 1])
+	          }, HALO_TEST_DELAY*1000)
+	      })
+	    }else if(t == 3){
+	       this.setHaloParams(0,0,1, function(){
+	         dsp.rpc0(6,[3*231,3,1]);
+	          setTimeout(function(){
+	            dsp.rpc0(KERN_API_RPC, [KAPI_RPC_TEST, 1])
+	          }, HALO_TEST_DELAY*1000)
+	      })
+	    }
+	}
 }
 
 class FtiRpcUdpSocket{
@@ -304,12 +348,10 @@ class FtiRpcUdpSocket{
 		return this
 	}
 	write(packet){
-		
-		console.log('writing packet'+JSON.stringify(packet))
-		this.socket.send(packet, 0, packet.length, this.rem_port, this.rem_ip, function(){
+		var ip = this.rem_ip.toString();
+		this.socket.send(packet, 0, packet.length, this.rem_port, ip, function(){
 			console.log('packet written')
 		});
-
 	}
 	purge(){/*does nothing for udp*/}
 	getPayload(sec, callBack){
@@ -334,8 +376,6 @@ class FtiRpcUdpSocket{
 			console.log("shut down dsp")
 		})
 	}
-
-
 }
 
 module.exports ={}

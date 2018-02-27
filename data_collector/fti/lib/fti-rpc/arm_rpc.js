@@ -2,12 +2,15 @@
 var dgram = require('dgram');
 var Crc = require('crc');
 var crypto = require('crypto');
-var aesjs = require('aes-js')
+var aesjs = require('aes-js');
+var Fti = require('./rpc.js');
+// var ds = require('./fti/lib/fti-rpc/rpc.js');
 //var Sync = require('sync');
 
 const ARM_RPC_PORT = 10002
 const LCD_DISPLAY_PORT = 54005
 const LOCATOR_PORT = 27182
+const DSP_SCOPE_PORT = 10004
 
 const ARM_RPC_ECHO 		   =  0
 const ARM_RPC_VERSION 	   =  1
@@ -48,9 +51,6 @@ class ArmRpcBase{
 		this.loc_port = loc_port
 		var self = this;
 		this.init_socket()
-		//Sync(function(){
-			//self.socket = self.init_socket.sync(null);	
-		//})
 		
 	}
 	init_socket(){
@@ -60,7 +60,6 @@ class ArmRpcBase{
         @socket.bind('0.0.0.0', @loc_port)
 		*/
 		var self = this;
-		// console.log("socket init")
 		if(this.socket){
 			this.socket.close();
 			this.socket.unref();
@@ -72,6 +71,8 @@ class ArmRpcBase{
 		this.socket.bind(0,'0.0.0.0');
 		this.socket.unref(); 				// needed to add this because otherwise initializing socket hanges with incomplete binding
 	}
+
+
 
 	rpc(data, time_out, trys){
 		time_out = time_out || 1.0
@@ -94,13 +95,83 @@ class ArmRpcBase{
 		}
 		//if(!ack)
 	}
+
+	// rpc1(func,args,string,timeout,callBack){
+	// 	var self = this;
+	// 	var payload = this.payloadForRpc(func,args,string);
+	// 	console.log("rpc1 packet =", packet)
+	// 	var packet = this.payload;
+	// 	console.log("rpc1 payload =", payload)
+	// 	console.log("rpc1 packet =", packet)
+	// 	this.write(packet);
+	// 	this.callBack = callBack;
+	// }
+
+
+	write(packet){
+		console.log('writing packet'+JSON.stringify(packet))
+		this.socket.send(packet, 0, packet.length, this.rem_port, this.rem_ip, function(){
+			console.log('packet written')
+		});
+	}
+
+	payloadForRpc(func,args,string){
+		var payload = [func]//String.fromCharCode(func)
+		var argByte = args.length%4 
+		if(string){
+			payload.push(argByte + 4)
+		}else{
+			payload.push(argByte)// = f.concat(argByte)
+		}
+		for(var i = 0; i<argByte; i++){
+			var word = args[i]
+			if(!Number.isInteger(word)){
+				word = Math.round(word);
+			}
+			payload.push(word & 0xff)
+			payload.push((word>>8)&0xff)
+		}
+		if(string){
+			//	string = new Buffer(string); not going to deal with this yet
+		}
+		payload = this.addCheckSum(payload);
+		return new Buffer(payload);
+	}
+	addCheckSum(str){
+		var cs = this.checkBytes(str);
+		str.push(cs[0]);
+		str.push(cs[1]);
+		return str;//str.concat(String.fromCharCode(cs[0])).concat(String.fromCharCode(cs[1])); 
+	}
+	checkBytes(str){
+		var c = this.fletcherCheckbytes(str)
+		var cs = []; 
+		cs[0] = 255-((c[0]+c[1])%255);
+		cs[1] = 255-((c[0]+cs[0])%255);
+		return cs;
+	}
+	fletcherCheckbytes(str){
+		var c1 = 0;
+		var c2 = 0;
+		var bytes = []
+		for(var i = 0; i < str.length; i++){
+			var b = str[i]
+			c1 = c1 + b;
+			if(c1>= 255){
+				c1 = c1 - 255
+			}
+			c2 = c2 + c1;
+			if (c2>=255){
+				c2 = c2 - 255
+			}
+		}
+		return [c1,c2];
+
+	}
 	send(packet, ip, port){
 		ip = ip || this.rem_ip;
 		port = port || this.rem_port;
-		// console.log('port? ')
-		// console.log(port)
 		this.socket.send(packet,0,packet.length,port,ip, function () {
-			// body...
 			console.log('sent packet!');
 		});
 
@@ -195,7 +266,6 @@ class ArmRpcBase{
 		var self = this;
 		var pkt = [ARM_RPC_ECHO,1,2,3]
 		this.packet_for(pkt,function(p){
-			// console.log('from echo callback');
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
 			var payload = ['"'+ self.rem_ip+'",'+ '['+[p]+']'];
 			callback(payload);
@@ -203,9 +273,7 @@ class ArmRpcBase{
 		return;
 	}
 	dsp_open(){
-		this.rpc([11,5],0);
 		var self = this;
-		console.log('dsp_open??')
 		this.packet_for([11,5],function(p){
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
 			console.log(p.byteLength)
@@ -217,18 +285,135 @@ class ArmRpcBase{
 
 	dsp_open_cb(callback){
 		var self = this;
-		this.rpc([11,5],0);
 		this.packet_for([11,5],function(p){
-			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
-			console.log(p.byteLength)
-			console.log('dsp_open')
+			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip)
+			console.log('dsp_open ;)')
 			var payload = ['"'+ self.rem_ip+'",'+ '['+[p]+']'];
 			callback(payload);
-			callback();
 		})
 		return;
-		
+	
 	}
+
+	bindSo(ip){
+	console.log("binding socket")
+    if(this.bound){
+      return;
+    }
+    var self = this;
+    var so = dgram.createSocket({'type':'udp4'})
+    so.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
+      console.log('bound on '+ DSP_SCOPE_PORT+' 0.0.0.0 ')
+      so.on('error', (err) => {
+		console.log(`server error:\n${err.stack}`);
+		so.close();
+	  });
+      so.on('message', function(e,rinfo){
+          console.log(e)
+            console.log("socket makes it here")
+          console.log('socket message sent')
+          self.packetHandler(e)
+      })
+    });
+  }
+    
+  bindNP(ip){
+   console.log('binding net poll')
+   var self = this;
+   console.log('net poll ip ',ip)
+   var np = dgram.createSocket('udp4')
+    np.on("listening", function () {
+      console.log('net poll event = ')
+      self.init_net_poll_events(np.address().port);
+      var e = 'sending this packet'
+      self.parse_net_poll_event(e);
+    });
+
+    np.on('error', function(err) {
+			  console.log(err);
+			});
+
+    var e = 'sending this packet'
+    np.on('message', function(e,rinfo){
+      if (e !== 1){
+      	console.log('what is e = ',e)
+      }
+      console.log("new message from: "+rinfo.address)
+      if(self.state.dspip == rinfo.address){
+         console.log(e)
+        if(e)
+        {
+        	idx = e.readInt16LE(0);
+				var r = e.readInt16LE(2);
+				var x = e.readInt16LE(4);
+				ra.push(r);
+				xa.push(x);
+				// console.log([r,x,idx]);
+				if (idx == 1){
+					// console.log(ra);
+					// console.log(xa);
+					callBack([ra,xa]);
+					s.close();
+					s.unref();
+				}
+			}else{
+				s.close();
+
+			}
+          // self.parse_net_poll_event(e);
+          //    console.log("parsed net poll event =", parse_net_poll_event(e));
+        }
+        e = null;
+        rinfo = null;
+
+    });
+
+
+    np.bind({address: '0.0.0.0',port: 0,exclusive: true});
+  	
+  	return np
+    // ({np:np})
+  }
+
+  init_net_poll_events( port){
+  	var dsp = Fti.FtiRpc.udp(port);
+  	console.log('init net poll')
+    var self = this;
+    dsp.rpc1(19,[10001,port], "",1.0, function(e, r){
+    	dsp.scope_comb_test(20,pk)
+      console.log("rpc1 opened ",e,r)
+    });
+    // var pk;
+
+    // setTimeout(function(pk){
+    //    dsp.dsp_manual_test(pk)
+    // },500);
+    
+  }
+
+  parse_net_poll_event(buf){
+    // var key = buf.readUInt16LE(0);
+    var key = buf;
+
+    var res = "";
+    var self = this;
+    console.log("packet received: " + buf.toString('hex'));
+//    console.log("Key: " + "0x" + key.toString(16));
+    // var value = buf.readUInt16LE(2);
+     var value = buf;
+    if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
+        console.log('PROD_REC_VAR')
+        console.log(buf.slice(9).toString())
+        if( self.state.askProd){
+          this.setState({prec:buf.slice(9),askProd:false})
+        }
+     }else if(32768 == (key & 0xf000)){
+        console.log('PROD_SYS_VAR')
+        console.log(buf.slice(9))
+      
+     }
+  
+  }
 }
 
 class ArmRpc extends ArmRpcBase{
@@ -260,8 +445,8 @@ class ArmRpc extends ArmRpcBase{
 		for(var i = 0; i<bsize; i++){
 			pk.push(0);
 		}
+
 		var pkbuffer = new Buffer(pk);
-		
 		self.socket.send(pkbuffer,0,pkbuffer.length, LOCATOR_PORT, this.rem_ip);
 		self.get_rpc_ack(1.0,1,pkbuffer,function(data){
 			var msg = data[0];
@@ -269,27 +454,19 @@ class ArmRpc extends ArmRpcBase{
 			for(var i = 0; i < msg.byteLength; i++){
 				tmp.push(msg.readUInt8(i));
 			}
-
 			var sk = tmp.slice(2, tmp.length);
-
 			var aes = crypto.createDecipheriv('aes-128-ecb', new Buffer(self.KEY), "")
 			aes.setAutoPadding(false);
 			var k = aes.update((msg.slice(2,msg.byteLength)).toString('binary'),'binary');
-			// console.log(k.length)
 			k = Buffer.concat([k,aes.final()]);
 			self.aesk = k;
 			var aesEcb = new aesjs.ModeOfOperation.ecb(self.KEY);
 			var ke = aesEcb.decrypt(msg.slice(2,msg.byteLength));
-			
-
 			var ka = []
-			// console.log('ke',ke);
 			for(var ko = 0; ko < ke.length; ko++){
 				ka.push(ke[ko]);
 			}
-
 			self.aesECB = new aesjs.ModeOfOperation.ecb(ka);
-		
 			callBack([self.aesECB]);
 		})
 	
@@ -298,33 +475,27 @@ class ArmRpc extends ArmRpcBase{
 	}
 
 	packet_for(data, callBack){
-		
 		var dat = super.packet_for(data);
-
 		var self = this;
-
 		this.init_session_key(function(c){var bsize = self.KEY.length
-		var pad = bsize - ((dat.length + 2)%bsize)
-		if(pad == bsize){
-			pad = 0;
-		}
-		var parry = []
-		for(var i=0;i<pad;i++){
-			parry.push(0)
-		}
-		// console.log('pad size: ' + pad.toString())
-		var bu = new Buffer(2)//[dat.length]);
-		bu.writeUInt16LE(dat.length)
-		dat = Buffer.concat([bu ,dat, new Buffer(parry)])
-		var pkt = new Buffer([]);
-		var n = Math.floor(dat.length/bsize);
-		var en = c[0];
-		var t;
-		var pkt = en.encrypt(dat.slice(0,bsize))
-
-		callBack(pkt)
-
-	})	
+			var pad = bsize - ((dat.length + 2)%bsize)
+			if(pad == bsize){
+				pad = 0;
+			}
+			var parry = []
+			for(var i=0;i<pad;i++){
+				parry.push(0)
+			}
+			console.log('pad size: ' + pad.toString())
+			var bu = new Buffer(2)//[dat.length]);
+			bu.writeUInt16LE(dat.length)
+			dat = Buffer.concat([bu ,dat, new Buffer(parry)])
+			var n = Math.floor(dat.length/bsize);
+			var en = c[0];
+			var t;
+			var pkt = en.encrypt(dat.slice(0,bsize))
+			callBack(pkt)
+		})	
 	}
 }
 

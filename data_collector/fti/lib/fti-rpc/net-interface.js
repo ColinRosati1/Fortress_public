@@ -22,7 +22,7 @@ class NetInterface{
 	}
 	static interface_list_mac(filter){
 		var list = os.networkInterfaces();
-		console.log(list) 
+		// console.log(list) 
 		var names = []
 		var ifList = []
 		if (filter != null){
@@ -44,6 +44,7 @@ class NetInterface{
 	}
 	static interface_list_win(filter){
 		var list = os.networkInterfaces();
+		console.log(list) 
 		var names = []
 		var ifList = []
 		if (filter != null){
@@ -108,6 +109,7 @@ class NetInterface_scope{
 	}
 	static interface_list_win(filter){
 		var list = os.networkInterfaces();
+		// console.log(list) 
 		var names = []
 		var ifList = []
 		if (filter != null){

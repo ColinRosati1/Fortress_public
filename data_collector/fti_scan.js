@@ -20,7 +20,7 @@ var _ = require('lodash');
 var file = 'data.json'
 var child;
 var path = ("datafile.txt");
-
+ 
 // ####################################################################
 // GPIO opens pins
 // ####################################################################
@@ -141,10 +141,9 @@ function writer(Obj_Type,data, DataSize)
 function Fti_Locate(){
 	'use strict'
 
-	var ArmLocator = arloc.ArmLocator;
-	ArmLocator.scan(5000,function(list){
-
-		console.log('function returns no string = ' + JSON.stringify(list))
+	// var ArmLocator = arloc.ArmLocator;
+	arloc.ArmLocator.scan(1500,function(list){
+		console.log('function returns = ' + JSON.stringify(list))
 		writer(JSON.stringify(list));
 	});
 
