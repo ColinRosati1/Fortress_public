@@ -423,59 +423,59 @@ class ArmRpcBase{
 	
 	}
 
-	bindSo(ip){
-	    var dsp = Fti.FtiRpc.udp(this.ip);
-	    var self = this;
-	    var so = dgram.createSocket({'type':'udp4'})
+	// bindSo(ip){
+	//     var dsp = Fti.FtiRpc.udp(this.ip);
+	//     var self = this;
+	//     var so = dgram.createSocket({'type':'udp4'})
 
-	    so.on('error', function(err) {
-		  console.log(`server error:\n${err.stack}`);
-		  so.close();
-		});
+	//     so.on('error', function(err) {
+	// 	  console.log(`server error:\n${err.stack}`);
+	// 	  so.close();
+	// 	});
 
-		so.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
-	      console.log('bound')
-	      		  })
+	// 	so.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
+	//       console.log('bound')
+	//       		  })
 
-		so.on('message', function(e,rinfo){
-	          console.log(e)
-	          console.log('package handler',self.state.packetHandler(e))
-	          self.state.packetHandler(e)
-		  })
-		});
-	}
+	// 	so.on('message', function(e,rinfo){
+	//           console.log(e)
+	//           console.log('package handler',self.state.packetHandler(e))
+	//           self.state.packetHandler(e)
+	// 	  })
+	// 	});
+	// }
     
-  bindNP(ip){
-   console.log('binding net poll')
+ //  bindNP(ip){
+ //   console.log('binding net poll')
    
-   var self = this;
-   var np = dgram.createSocket('udp4')
-   var dsp = Fti.FtiRpc.udp(this.ip);
-   np.on('error', function(err) {
-	  console.log(`server error:\n${err.stack}`);
-	  np.close();
-	});
-    np.on("listening", function () {
-      var listening = new NetPollEvents('192.168.33.50').init_net_poll_events(np.address().port);
-    });
+ //   var self = this;
+ //   var np = dgram.createSocket('udp4')
+ //   var dsp = Fti.FtiRpc.udp(this.ip);
+ //   np.on('error', function(err) {
+	//   console.log(`server error:\n${err.stack}`);
+	//   np.close();
+	// });
+ //    np.on("listening", function () {
+ //      var listening = new NetPollEvents('192.168.33.50').init_net_poll_events(np.address().port);
+ //    });
 
-    np.on('message', function(e,rinfo){
-        console.log("new message from: "+rinfo.address)
+ //    np.on('message', function(e,rinfo){
+ //        console.log("new message from: "+rinfo.address)
 
-      if(self.dspip == rinfo.address){
-         console.log(e)
-        if(e)
-        {
-          self.parse_net_poll_event(e);
-        }
-        e = null;
-        rinfo = null;
-      }
-    });
+ //      if(self.dspip == rinfo.address){
+ //         console.log(e)
+ //        if(e)
+ //        {
+ //          self.parse_net_poll_event(e);
+ //        }
+ //        e = null;
+ //        rinfo = null;
+ //      }
+ //    });
 
-    np.bind({address: '0.0.0.0',port: 0,exclusive: true});
-    // return({np:np})	
-  }
+ //    np.bind({address: '0.0.0.0',port: 0,exclusive: true});
+ //    // return({np:np})	
+ //  }
 
  
 }

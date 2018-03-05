@@ -17,7 +17,6 @@ var sys = require('util')
 var exec = require('child_process').exec;
 var jsonfile = require('jsonfile')
 var _ = require('lodash');
-var file = 'data.json'
 var child;
 var path = ("datafile.txt");
  
@@ -119,13 +118,6 @@ function main() {
 function writer(Obj_Type,data, DataSize)
 {
 	var netinfo= [];
-	var netinfo_json= [];
-	// for(var prop in data[i]){
-	// 	    // console.log('key = ', prop);
-	// 	    // console.log('value = ', data[0][prop]);
-	// 	    netinfo.push(prop,data[0][prop]);
-	// 	    netinfo_json.push(prop,data[0][prop], "\n");
-	// 	}
 	child = exec("date", function (error, stdout) {
 	  fs.appendFile(path,'\n'+stdout+Obj_Type+'\n'+netinfo+'}'+'\n',function(err){});
 	   if (error !== null) {
@@ -140,12 +132,18 @@ function writer(Obj_Type,data, DataSize)
 // ####################################################################
 function Fti_Locate(){
 	'use strict'
-
-	// var ArmLocator = arloc.ArmLocator;
+	var Arm_Array = [];
 	arloc.ArmLocator.scan(1500,function(list){
-		console.log('function returns = ' + JSON.stringify(list))
-		writer(JSON.stringify(list));
+		var mylist= [JSON.stringify(list)];
+		mylist.forEach(function(item) {
+		  Arm_Array.push(item)
+		});
 	});
+	setTimeout(function(e){
+		writer(JSON.stringify(Arm_Array));
+		console.log(Arm_Array);
+		return
+	},2000)
 
 }
 

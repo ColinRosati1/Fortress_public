@@ -100,7 +100,6 @@ class ArmLocator{
 			  // return scope_data ;
 			 
 			  setTimeout(function(){
-				// console.log(dev.extract_loc_data(msg) );
 				callBack(scope_data);
 			   }, secTimeout);
 			});
@@ -190,12 +189,13 @@ class ArmDev{
 		
 
 		var ip_List = [this.ip]
-		// return (conf)
+		var name = this.nm
 
 		var parsed_data = this.parse_name(loc);
-		// console.log(parsed_data)
-		var extracted_data = [this.ip, parsed_data];
+		// console.log('this is the parsed data looking for translated fti app = ',parsed_data[1])
+		var extracted_data = [this.name,parsed_data[1],this.ip];
 		return extracted_data;
+		// return ip_List;
 		// return loc;
 	}
 

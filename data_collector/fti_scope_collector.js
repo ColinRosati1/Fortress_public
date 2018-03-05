@@ -34,9 +34,10 @@ var ds = require('./fti/lib/fti-rpc/rpc.js');
 var Fti = require('./fti');
 var sys = require('util')
 var exec = require('child_process').exec;
+var dgram = require('dgram');
 var jsonfile = require('jsonfile')
 var _ = require('lodash');
-var file = 'data.json'
+var file = 'data.json';
 var child;
 
 // sets the values for pin HIGH and LOW.  
@@ -45,6 +46,18 @@ const LOW = 0;
 var secTimeout = 2000;
 var path = ("scopedatafile.txt");
 
+const HALO_TEST_DELAY = 1;
+const DSP_SCOPE_PORT = 10004;
+const KERN_API_RPC = 19;
+const KAPI_RPC_TEST = 32;
+const KAPI_IBTEST_PASSES_FE_READ = 210
+const KAPI_IBTEST_PASSES_NFE_READ = 214
+const KAPI_IBTEST_PASSES_SS_READ = 218  
+
+const KAPI_IBTEST_PASSES_FE_WRITE = 90//212
+const KAPI_IBTEST_PASSES_NFE_WRITE = 94
+const KAPI_IBTEST_PASSES_SS_WRITE = 98 
+const NP_RPC = 13
 // ####################################################################
 // GPIO opens pins
 // ####################################################################
@@ -165,6 +178,206 @@ function exit()
 
 }
 
+class scope_collector {
+	constructor(ip,port){
+		var dspip = "192.168.33.50"	
+		var FtiRpc = fti.Rpc.FtiRpc;
+	    var arm = new Fti.ArmRpc.ArmRpc(dspip);
+	    var ph = function(e){
+	      console.log(e)
+	    }
+	    var packetHandler = ph;
+	    var port = 10001
+	   	var dsp = FtiRpc.udp(dspip);
+	    var self = this;
+	    this.ip = dspip;
+	    this.dsp = dsp
+	   
+	    console.log("now echo");
+	    var pk;
+	    arm.echo_cb(function(array){
+	      console.log("echoed")
+	      console.log(array);
+	      arm.dsp_open_cb(function(pl){
+	        console.log('dspn open payload = ',pl)
+	        self.bindSo(dspip)
+	        setTimeout(function(){
+	            self.bindNP(dspip)
+	            setTimeout(function(){
+		     	 	self.haloTest(1);
+		     	 	setTimeout(function(){self.photoEye()},500);
+		        },1000);
+	        },5000);
+	      });
+	    });
+
+
+	}
+
+
+	bindSo(ip){
+	    // var dsp = Fti.FtiRpc.udp(this.ip);
+	    var self = this;
+	    var so = dgram.createSocket({'type':'udp4'})
+
+	    so.on('error', function(err) {
+		  console.log(`server error:\n${err.stack}`);
+		  so.close();
+		});
+
+		so.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
+	      console.log('bound')
+	    })
+
+		so.on('message', function(e,rinfo){
+	          console.log('bound socket message = ',e)
+	          // var ph;
+	          var packetHandler = function(e){
+			      console.log(e)
+			    }
+	          // console.log('package handler',self.packetHandler(e))
+	          packetHandler(e)
+		});
+	}
+    
+  	bindNP(ip){
+	    console.log('binding net poll')
+	    var self = this;
+	    var np = dgram.createSocket('udp4')
+	    // var dsp = Fti.FtiRpc.udp(this.ip);
+	    np.on('error', function(err) {
+		  console.log(`server error:\n${err.stack}`);
+		  np.close();
+		});
+
+	    np.on("listening", function () {
+	       // self.NetPollEvents('192.168.33.50').init_net_poll_events(np.address().port);
+	   	   self.init_net_poll_events(np.address().port);
+
+	    });
+
+	    np.on('message', function(e,rinfo){
+	        console.log("new message from: "+rinfo.address)
+
+	      if(self.dspip == rinfo.address){
+	         console.log(e)
+	        if(e)
+	        {
+	          self.parse_net_poll_event(e);
+	        }
+	        e = null;
+	        rinfo = null;
+	      }
+	    });
+
+	    np.bind({address: '0.0.0.0',port: 0,exclusive: true});
+	    return this.np	
+	}
+
+	init_net_poll_events(port){
+	    var self = this;
+	    var dsp = this.dsp;
+	    dsp.rpc1(19,[100,port], "",1.0, function(e, r){
+	      console.log(e,r)
+	    });
+	}
+
+	parse_net_poll_event(buf){
+	    var key = buf.readUInt16LE(0);
+	    var res = "";
+	    var self = this;
+	    console.log("packet received: " + buf.toString('hex'));
+	//  console.log("Key: " + "0x" + key.toString(16));
+	    var value = buf.readUInt16LE(2);
+
+	    if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
+	        console.log('PROD_REC_VAR')
+	        console.log(buf.slice(9).toString())
+	        if( self.state.askProd){
+	          this.setState({prec:buf.slice(9),askProd:false})
+	        }
+	    }
+	    else if(32768 == (key & 0xf000)){
+	        console.log('PROD_SYS_VAR')
+	        console.log(buf.slice(9))
+	    	if( self.state.askSys){
+	       	 this.setState({srec:buf.slice(9),askSys:false})
+	    	}
+	    }
+	  
+	  }
+
+	setHaloParams(f,n,s, callBack){
+	    console.log(f)
+	    var dsp = this.dsp;
+
+	    dsp.rpc1(KERN_API_RPC, [KAPI_IBTEST_PASSES_SS_WRITE, s], "",1.0, function(){
+	        console.log('SS set');
+	        //setTimeout()
+	        //98%32 = 2
+
+	        dsp.rpc1(KERN_API_RPC, [KAPI_IBTEST_PASSES_FE_WRITE, f], "",1.0, function(){
+	          console.log("FE set")
+	          //160315 bug - dsp thinks this is [90,90] instead of [90,f] so I get 90%32 = 26
+	          dsp.rpc1(KERN_API_RPC, [KAPI_IBTEST_PASSES_NFE_WRITE, n], "",1.0, function(){
+	            //94%32 = 30
+	            console.log("NFE set")
+	            if(callBack){
+	              callBack();
+	        
+	            }
+	          })
+	        })  
+	      });
+
+	  }
+
+    haloTest(t){
+	    console.log(t)
+	    var dsp = this.dsp;
+	    if(t == 0){
+	       dsp.rpc0(6,[3*231,5,1]);
+	    }else if(t == 1){
+	        this.setHaloParams(1,0,0, function(){
+	          dsp.rpc0(6,[3*231,3,1]);
+	          setTimeout(function(){
+	            dsp.rpc0(KERN_API_RPC, [KAPI_RPC_TEST, 1]);
+	            console.log('testing')
+	          }, HALO_TEST_DELAY*1000)
+	          return;
+	      })
+	    }else if(t == 2){
+	       this.setHaloParams(0,1,0, function(){
+	         dsp.rpc0(6,[3*231,3,1]);
+	          setTimeout(function(){
+	            dsp.rpc0(KERN_API_RPC, [KAPI_RPC_TEST, 1])
+	          }, HALO_TEST_DELAY*1000)
+	      })
+	    }else if(t == 3){
+	       this.setHaloParams(0,0,1, function(){
+	         dsp.rpc0(6,[3*231,3,1]);
+	          setTimeout(function(){
+	            dsp.rpc0(KERN_API_RPC, [KAPI_RPC_TEST, 1])
+	          }, HALO_TEST_DELAY*1000)
+	      })
+	    }
+	    setTimeout(function(){return },3000);
+  }
+
+  photoEye(){
+    var dsp = this.dsp;
+    dsp.rpc0(5,[0,1,1])
+    setInterval(function () {
+        dsp.rpc0(5,[0,1,1]);
+        setTimeout(function () {
+            dsp.rpc0(NP_RPC,[]);
+        }, 100)
+    },10000)
+  }
+}
+
+
+
 // ####################################################################
 // Locats and logs Arm scope data
 // ####################################################################
@@ -180,39 +393,43 @@ function Fti_Locate(){
 
 }
 
+	
+
 // ####################################################################
 //  Arm scope data
 
 // ####################################################################
 function Fti_Scope(){
-	var dspip = "192.168.33.50"
-	var FtiRpc = fti.Rpc.FtiRpc;
-    var arm = new Fti.ArmRpc.ArmRpc(dspip);
-    var self = this;
+	// var dspip = "192.168.33.50"
+	// var FtiRpc = fti.Rpc.FtiRpc;
+ //    var arm = new Fti.ArmRpc.ArmRpc(dspip);
+ //    var self = this;
 
 	// Fti_Locate();
 
-    var port = 10001
-    var dsp = FtiRpc.udp(port);
+    // var port = 10001
+    // var dsp = FtiRpc.udp(port);
 
-    console.log("now echo")
-    var pk =  "MY PACKET"
-    arm.echo_cb(function(array){
-      console.log("echoed")
-      console.log(array);
-      arm.dsp_open_cb(function(pl){
-        // console.log('dspn open payload = ',pl)
-        arm.bindSo(dspip)
-        setTimeout(function(){
-           arm.bindNP(dspip)
-             setTimeout(function(pk){
-	     	 	haloTest(dspip);
-	         },1000);
-         },5000);
-      })
-    });
+    // console.log("now echo")
+    // var pk =  "MY PACKET"
+    // arm.echo_cb(function(array){
+    //   console.log("echoed")
+    //   console.log(array);
+    //   arm.dsp_open_cb(function(pl){
+    //     // console.log('dspn open payload = ',pl)
+    //     arm.bindSo(dspip)
+    //     setTimeout(function(){
+    //        arm.bindNP(dspip)
+    //          setTimeout(function(pk){
+	   //   	 	haloTest(dspip);
+	   //       },1000);
+    //      },5000);
+    //   })
+    // });
 
 	// haloTest();
+
+	var scope = new scope_collector();
 
 			
 }
