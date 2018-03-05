@@ -94,6 +94,78 @@ class FtiHelper{
   }
 }
 
+//
+//
+//
+class IScope {
+ 
+  componentDidMount(){
+    var self = this;
+    var dif = document.getElementById(this.props.plotDivId);
+    Plotly.plot(dif, this.state.data, this.state.layout);
+
+    //this.bindSo();
+  }
+  sendRpc(type, args){
+    var dsp = this.state.dsp;
+    dsp.rpc1(type,args,"",1.0, function(e,rinfo){
+      console.log(e)
+    })
+  }
+  
+  process_phase_packet_int(pkt){
+    var mode = pkt.readUInt8(0);
+    var flags = pkt.readUInt8(1);
+    var idx = pkt.readInt16LE(2);
+     var chans = [];
+     var peak = this.peak;
+    for(var i = 4; i<pkt.byteLength; i+=2){
+      var val = pkt.readInt16LE(i)
+      if(Math.abs(val)>peak){
+        peak = Math.abs(val)
+      }
+      chans.push(val);
+    }
+    var eye = ((flags & 0x80) == 0 ) ? 0 : 1;
+    var cnt = (flags & 0x7f);
+       console.log(cnt)
+    
+    chans.unshift(eye);
+   
+    if(cnt == 0){
+      console.log('how do I get here')
+      return this.on_sig_ready_int()
+    }
+    var sigs = this.sigs
+    var sl = sigs.length
+    for(var s = 0; s<(chans.length - sl); s++){
+      sigs.unshift([]);
+    }
+    for(var c = 0; c<chans.length;c++){
+      console.log(chans[c])
+      //this.state.channels[this.state.labels[c]].push(chans[c])
+      sigs[c].push(chans[c])
+    }
+    if(idx<0){
+     var dsp = this.state.dsp
+     dsp.trigger_fss(0);
+     this.on_sig_ready_int();
+    }
+    // this.setState({sigs:sigs, peak:peak})
+
+  }
+  photoEye(){
+    var dsp = this.dsp
+    this.setPH(this.process_phase_packet)
+    dsp.rpc1(6,[0,0,0],"",1.0,function(e,rinfo){
+      dsp.rpc1(5,[0,0,0],"",1.0, function(e,rinfo){
+	    dsp.rpc0(5,[0,1,1])
+    })});
+  }
+  
+}
+
+
 class ArmRpcBase{
 	constructor(host, port,loc_port){
 		if(!host){
@@ -106,8 +178,7 @@ class ArmRpcBase{
 		this.rem_port = port
 		this.loc_port = loc_port
 		var self = this;
-		this.init_socket()
-		
+		this.init_socket();
 	}
 	setCallBack(cb){
 		this.callBack = cb;
@@ -133,12 +204,9 @@ class ArmRpcBase{
 		this.socket.unref(); 				// needed to add this because otherwise initializing socket hanges with incomplete binding
 	}
 
-
-
 	rpc(data, time_out, trys){
 		time_out = time_out || 1.0
 		trys = trys || 1
-
 		var self = this;
 		var packet = this.packet_for(data)
 		this.send(packet)
@@ -151,7 +219,6 @@ class ArmRpcBase{
 			ack = data[0];
 			sender = data[1];
 			self.verify_rpc_ack(ack);
-
 		});
 		}
 		//if(!ack)
@@ -357,203 +424,145 @@ class ArmRpcBase{
 	}
 
 	bindSo(ip){
-	console.log("binding socket")
-    if(this.bound){
-      return;
-    }
+	    var dsp = Fti.FtiRpc.udp(this.ip);
+	    var self = this;
+	    var so = dgram.createSocket({'type':'udp4'})
 
-    // var e, rinfo;
-    var dsp = Fti.FtiRpc.udp(this.ip);
-    var ra =[];
-	var xa =[];
-	var idx ;
-    var self = this;
-    var so = dgram.createSocket({'type':'udp4'})
-    so.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
-      console.log('bound on '+ DSP_SCOPE_PORT+' 0.0.0.0 ')
-      dsp.rpc1(DRPC_NUMBER,[KAPI_RPC_ETHERNETIP,0]);
-      so.on('error', (err) => {
-		console.log(`server error:\n${err.stack}`);
-		so.close();
-	  });
-	  so.on('message', function(e,rinfo){
-     	  console.log("my bind socket function currently has e = ",e,"and rinfo = ", rinfo)
-          console.log(e)
-          console.log('socket message sent')
-          self.packetHandler(e)
-			if(e){
-				//console.log(e.byteLength)
-				idx = e.readInt16LE(0);
-				var r = e.readInt16LE(2);
-				var x = e.readInt16LE(4);
-				ra.push(r);
-				xa.push(x);
-				console.log('scope data',[r,x,idx]);
-				var scopearray = [r,x,idx];
-				if (idx == 1){
-					console.log(ra);
-					console.log(xa);
-					so.close();
-					so.unref();
-				}
-			}else{
-				so.close();
-
-			}
+	    so.on('error', function(err) {
+		  console.log(`server error:\n${err.stack}`);
+		  so.close();
 		});
-		so.on('close', function(){
-			console.log('closing')
-			so.unref();
-		})
-		setTimeout(function(){
-			if(idx != 1){
-				so.close();
-				console.log('close')
-			}else{
-				so.unref();
-				console.log('unref')
-			}
-			// console.log('closed')
-		}, 8000);
-		return;
 
-      })
-    // });
-  }
+		so.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
+	      console.log('bound')
+	      		  })
+
+		so.on('message', function(e,rinfo){
+	          console.log(e)
+	          console.log('package handler',self.state.packetHandler(e))
+	          self.state.packetHandler(e)
+		  })
+		});
+	}
     
   bindNP(ip){
    console.log('binding net poll')
+   
    var self = this;
-
-   console.log('net poll ip ',ip)
    var np = dgram.createSocket('udp4')
-
+   var dsp = Fti.FtiRpc.udp(this.ip);
+   np.on('error', function(err) {
+	  console.log(`server error:\n${err.stack}`);
+	  np.close();
+	});
     np.on("listening", function () {
-      console.log('net poll event = ')
-      self.init_net_poll_events(np.address().port);
-      	
-        var dsp = Fti.FtiRpc.udp(this.ip);
-        dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_ETHERNETIP,this.port]);
-        setTimeout(function () {
-            dsp.rpc0(NP_RPC,[]);
-            setTimeout(function () {
-                            dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_REJ_DEL_CLOCK_READ]);
-            }, 100)
-        }, 100)
-        /*setInterval(function () {
-            dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_ETHERNETIP,port]);
-            setTimeout(function () {
-                            dsp.rpc0(NP_RPC,[]);
-            }, 100)
-        },10000)*/
-        np.on('message', function (message, remote) {
-           // CAN I HANDLE THE RECIVED REPLY HERE????
-            if(message.readUInt16LE(1)==KAPI_RPC_REJ_DEL_CLOCK_READ)
-            {
-            				console.log("netpoll handled?")
-                            self.record_deps["ProdRec.RejModeEmu"]=message.readUInt16LE(3);
-            }
-//                                            console.log(message);
-        });
-      self.parse_net_poll_event(e);
+      var listening = new NetPollEvents('192.168.33.50').init_net_poll_events(np.address().port);
     });
 
-    np.on('error', function(err) {
-			  console.log(err);
-			});
-
-    var e ;
     np.on('message', function(e,rinfo){
-      if (e !== 1){
-      	console.log('what is e = ',e)
-      }
-      console.log("new message from: "+rinfo.address)
-      if(self.state.dspip == rinfo.address){
+        console.log("new message from: "+rinfo.address)
+
+      if(self.dspip == rinfo.address){
          console.log(e)
         if(e)
         {
-        	idx = e.readInt16LE(0);
-				var r = e.readInt16LE(2);
-				var x = e.readInt16LE(4);
-				ra.push(r);
-				xa.push(x);
-				console.log([r,x,idx]);
-				if (idx == 1){
-					// console.log(ra);
-					// console.log(xa);
-					callBack([ra,xa]);
-					s.close();
-					s.unref();
-				}
-			}else{
-				s.close();
-
-			}
-          // self.parse_net_poll_event(e);
-          //    console.log("parsed net poll event =", parse_net_poll_event(e));
+          self.parse_net_poll_event(e);
         }
         e = null;
         rinfo = null;
-
+      }
     });
 
-
     np.bind({address: '0.0.0.0',port: 0,exclusive: true});
-  	
-  	return np
-    // ({np:np})	
+    // return({np:np})	
   }
 
-  init_net_poll_events(port){
-        // var FtiRpc = Rpc.FtiRpc;
-        console.log('init net poll')
-        var self = this;
-        var dsp = Fti.FtiRpc.udp(this.ip);
-        console.log(port)
+ 
+}
 
-        var np = dgram.createSocket('udp4')
-        dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_ETHERNETIP,port]);
-        // setTimeout(function () {
-        //     dsp.rpc0(NP_RPC,[]);
-        //     setTimeout(function () {
-        //         dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_REJ_DEL_CLOCK_READ]);
-        //         console.log( "dsp rpc0 opened")
-        //     }, 200)
-        // }, 200)
-   
-        np.on('message', function (message, remote) {
-           // CAN I HANDLE THE RECIVED REPLY HERE????
-            if(message.readUInt16LE(1)==KAPI_RPC_REJ_DEL_CLOCK_READ)
-            {
-            	console.log("netpoll handled?")
-                self.record_deps["ProdRec.RejModeEmu"]=message.readUInt16LE(3);
+class NetPollEvents{
+    constructor(detector_ip, vdef, callback)
+    {
+        var self = this;
+        this.ip = detector_ip;
+        this.vdef = vdef;
+        this.record_deps = [];
+        this.param_last_val = [];
+        this.param_last_val["ProdName"] = "*********************";
+        this.faults = "";
+        this.faults_array = [];
+        this.event_info = {string: ""};
+        this.callback = callback;
+        self.init_net_poll_events_server();
+    }
+    init_net_poll_events_server(){
+    	console.log('NP sever hit')
+        var self = this;
+        var so = dgram.createSocket('udp4')
+        so.on("listening", function () {
+        	console.log('NP sever listening .. hit')
+            self.init_net_poll_events(so.address().port);
+        });
+        so.on('message', function(e,rinfo){
+         console.log('NP sever message new message from: '+rinfo.address)
+            if(self.ip == rinfo.address){
+//                                  console.log(e)
+                if(e)
+                {
+                    self.parse_net_poll_event(e);
+                }
+                e = null;
+                rinfo = null;
             }
         });
+        so.bind({address: '0.0.0.0',port: 0,exclusive: true});
     }
+    init_net_poll_events(port){
+        var FtiRpc = Fti.FtiRpc;
+        var self = this;
+        var dsp = FtiRpc.udp(this.ip);
+        var so = dgram.createSocket('udp4')
+        console.log('this.ip = ',this.ip)
+        console.log('init np event')
+        dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_ETHERNETIP,port]);
+        setTimeout(function () {
+            dsp.rpc0(NP_RPC,[]);
+            setTimeout(function () {
+                dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_REJ_DEL_CLOCK_READ]);
 
-  parse_net_poll_event(buf){
-    // var key = buf.readUInt16LE(0);
-    var key = buf;
+            }, 100)
+        }, 100)
+   
+        so.on('message', function (message, remote) {
+            if(message.readUInt16LE(1)==KAPI_RPC_REJ_DEL_CLOCK_READ)
+            {
+                self.record_deps["ProdRec.RejModeEmu"]=message.readUInt16LE(3);
+            }
+    //                                            console.log(message);
+        });
+    };
 
-    var res = "";
-    var self = this;
-    // console.log("packet received: " + buf.toString('hex'));
-//    console.log("Key: " + "0x" + key.toString(16));
-    // var value = buf.readUInt16LE(2);
-   	var value = buf;
-    if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
-        console.log('PROD_REC_VAR')
-        console.log(buf.slice(9).toString())
-        if( self.state.askProd){
-          this.setState({prec:buf.slice(9),askProd:false})
-        }
-     }else if(32768 == (key & 0xf000)){
-        console.log('PROD_SYS_VAR')
-        console.log(buf.slice(9))
-      
-     }
-  
-  }
+        parse_net_poll_event(buf){
+	    // var key = buf.readUInt16LE(0);
+	    var key = buf;
+
+	    var res = "";
+	    var self = this;
+	    // console.log("packet received: " + buf.toString('hex'));
+	//    console.log("Key: " + "0x" + key.toString(16));
+	    // var value = buf.readUInt16LE(2);
+	   	var value = buf;
+	    if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
+	        console.log('PROD_REC_VAR')
+	        console.log(buf.slice(9).toString())
+	        if( self.state.askProd){
+	          this.setState({prec:buf.slice(9),askProd:false})
+	        }
+	     }else if(32768 == (key & 0xf000)){
+	        console.log('PROD_SYS_VAR')
+	        console.log(buf.slice(9))
+	     }
+	  }
 }
 
 class ArmRpc extends ArmRpcBase{

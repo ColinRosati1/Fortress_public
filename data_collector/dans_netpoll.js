@@ -42,7 +42,7 @@ class NetPollEvents{
         so.bind({address: '0.0.0.0',port: 0,exclusive: true});
     }
     init_net_poll_events(port){
-        var FtiRpc = Fti.Rpc.FtiRpc;
+           var FtiRpc = Fti.Rpc.FtiRpc;
         var self = this;
         var dsp = FtiRpc.udp(this.ip);
         console.log(port)
@@ -50,25 +50,20 @@ class NetPollEvents{
         setTimeout(function () {
             dsp.rpc0(NP_RPC,[]);
             setTimeout(function () {
-                            dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_REJ_DEL_CLOCK_READ]);
+                dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_REJ_DEL_CLOCK_READ]);
             }, 100)
         }, 100)
-        /*setInterval(function () {
-            dsp.rpc0(DRPC_NUMBER,[KAPI_RPC_ETHERNETIP,port]);
-            setTimeout(function () {
-                            dsp.rpc0(NP_RPC,[]);
-            }, 100)
-        },10000)*/
+   
         dsp.port.socket.on('message', function (message, remote) {
-           // CAN I HANDLE THE RECIVED REPLY HERE????
             if(message.readUInt16LE(1)==KAPI_RPC_REJ_DEL_CLOCK_READ)
             {
-                            self.record_deps["ProdRec.RejModeEmu"]=message.readUInt16LE(3);
+                self.record_deps["ProdRec.RejModeEmu"]=message.readUInt16LE(3);
             }
-//                                            console.log(message);
+    //                                            console.log(message);
         });
 
     }
+    
     // parse_net_poll_event(buf){
     // var key = buf.readUInt16LE(0);
     // var res = "";

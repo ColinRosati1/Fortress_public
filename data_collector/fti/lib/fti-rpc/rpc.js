@@ -11,28 +11,19 @@ class FtiRpc{
 		this.unit = unit
 		if(!host){return this}
 		
-			this.port = new FtiRpcSocket(host,port)
-			console.log("ftirpc.new")
-			
+		this.port = new FtiRpcSocket(host,port)
+		// console.log("FtiRpc creates a new port = ", this.port)
+
+		// if(this.port){
+		// 	this.port.close();
+		// 	console.log("closing port")	
+		// }
 	}
+
 	close(){
 		if(this.port){
 			this.port.close();
 		}
-	}
-
-	// write(packet){
-	// 	console.log('writing packet'+JSON.stringify(packet))
-	// 	console.log('writing packet'+packet)
-	// 	// this.socket.send(packet, 0, packet.length, this.rem_port, this.rem_ip, function(){
-	// 	// 	console.log('packet written')
-	// 	// });
-	// }
-	write(packet){
-		console.log('writing packet'+JSON.stringify(packet))
-		this.socket.send(packet, 0, packet.length, this.rem_port, this.rem_ip, function(){
-			console.log('packet written = ', packet)
-		});
 	}
 
 	rpc_n(func,args,string,timeout,callBack){
@@ -68,17 +59,17 @@ class FtiRpc{
 	send_packet(packet, timeout){
 
 	}
-	rpc0(func,args,string,callBack){
-		var payload = this.payloadForRpc(func,args,string);
-		console.log(payload)
-		var packet = this.frame(payload);
-		// this.port.write(packet);
-		// this.port.callBack = function(){
-		this.write(packet);
-		this.callBack = function(){
-			console.log('no callBack set')
-		}
-	}
+	// rpc0(func,args,string,callBack){
+	// 	var payload = this.payloadForRpc(func,args,string);
+	// 	console.log('this is rpc0',payload)
+	// 	var packet = this.frame(payload);
+	// 	this.port.write(packet);
+	// 	this.port.callBack = function(){
+	// 	// this.write(packet);
+	// 	// this.callBack = function(){
+	// 		console.log('no callBack set')
+	// 	}
+	// }
 	payloadForRpc(func,args,string){
 		var payload = [func]//String.fromCharCode(func)
 		// console.log('payloadForRpc payload=', payload)
@@ -151,33 +142,7 @@ class FtiRpc{
 	trigger_fss(mode){
 		this.rpc0(5[0,1,mode])
 	}
-	/* RPC's */
-	/*version(){}
-	findUnits(){}
-	uart1_speed_high(){}
-	serialLoad(){}
-	sboot(){}
-	trigger_fss(){}
-	program_flash_hex(){}
-	program_flash_img(){}
-	program_flash_unlock(){}
-	program_sector(){}
-	verify_sec(){}
-	lastSectorWritten(){}
-	flash_func_version(){}
-	echo(){}
-	ssi_cfg(){}
-	sst(){}
-	default_rec(){}
-	f_vdef(){}
-	f_defaults(){}
-	default_records(){}
-	set_vdef_records(){}
-	load_vdef(){}
-	load_defaults(){}
-	vdef(){}
-	p_vdef(){}
-	*/
+
 	/*********************************************************/
 	/*  net-poll											 */
 	/*********************************************************/
@@ -199,7 +164,6 @@ class FtiRpc{
 	
 }
 class FtiRpcSocket extends net.Socket{
-
 }
 
 class FtiRpcUdp extends FtiRpc{
@@ -213,7 +177,18 @@ class FtiRpcUdp extends FtiRpc{
 			return this;
 		}
 		this.port = new FtiRpcUdpSocket(host,port)
-		// 	console.log(this.port)
+		console.log('line 180 FtiRpcUdp creates a new port = ',this.port)
+	}
+	rpc0(func,args,string,callBack){
+		var payload = this.payloadForRpc(func,args,string);
+		console.log('this is rpc0',payload)
+		var packet = this.frame(payload);
+		this.port.write(packet);
+		this.port.callBack = function(){
+		// this.write(packet);
+		// this.callBack = function(){
+			console.log('no callBack set')
+		}
 	}
 	scope_comb_test(n,callback){
 		console.log('scope comb test open')
@@ -345,6 +320,7 @@ class FtiRpcUdp extends FtiRpc{
 	}
 }
 
+
 class FtiRpcUdpSocket{
 	constructor(host,port){
 		port = port || 10001
@@ -360,12 +336,15 @@ class FtiRpcUdpSocket{
 		this.socket.on('message',function(e, rinfo){
 			self.callBack(e, rinfo)
 		})
+		console.log('FtiRpcUDpSocket port', this)
 		return this
+
 	}
 	write(packet){
 		var ip = this.rem_ip.toString();
+		console.log(' write packet');
 		this.socket.send(packet, 0, packet.length, this.rem_port, ip, function(){
-			console.log('packet written')
+			console.log('packet written write packet line 334')
 		});
 	}
 	purge(){/*does nothing for udp*/}

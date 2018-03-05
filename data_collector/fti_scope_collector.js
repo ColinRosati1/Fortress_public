@@ -205,9 +205,9 @@ function Fti_Scope(){
         arm.bindSo(dspip)
         setTimeout(function(){
            arm.bindNP(dspip)
-          //  setTimeout(function(pk){
-	     		arm.init_net_poll_events(0)
-	         // },5000);
+             setTimeout(function(pk){
+	     	 	haloTest(dspip);
+	         },1000);
          },5000);
       })
     });
