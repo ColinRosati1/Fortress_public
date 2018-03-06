@@ -36,6 +36,7 @@ var sys = require('util')
 var exec = require('child_process').exec;
 var dgram = require('dgram');
 var jsonfile = require('jsonfile')
+var plotly = require('plotly')
 var _ = require('lodash');
 var file = 'data.json';
 var child;
@@ -192,6 +193,9 @@ class scope_collector {
 	    var self = this;
 	    this.ip = dspip;
 	    this.dsp = dsp
+
+	   var ra=[]
+	   var xa=[]
 	   
 	    console.log("now echo");
 	    var pk;
@@ -202,10 +206,11 @@ class scope_collector {
 	        console.log('dspn open payload = ',pl)
 	        self.bindSo(dspip)
 	        setTimeout(function(){
+	        	// self.photoEye()
 	            self.bindNP(dspip)
 	            setTimeout(function(){
-		     	 	self.haloTest(1);
-		     	 	setTimeout(function(){self.photoEye()},500);
+		     	 	self.haloTest(3);
+		     	 	// setTimeout(function(){self.photoEye()},500);
 		        },1000);
 	        },5000);
 	      });
@@ -229,41 +234,51 @@ class scope_collector {
 	      console.log('bound')
 	    })
 
+
 		so.on('message', function(e,rinfo){
-	          console.log('bound socket message = ',e)
+	          // console.log('bound socket message = ',e)
 	          // var ph;
 	          var packetHandler = function(e){
-			      console.log(e)
-			    }
+			      // console.log(e, rinfo)
+			  }
 	          // console.log('package handler',self.packetHandler(e))
-	          packetHandler(e)
+	          // packetHandler(e)
+	          // self.parse_net_poll_event(e)
+	          self.process_sig_packet(e)
 		});
 	}
     
+    // currently bindNP doesnt do anything with packets from photoeye
   	bindNP(ip){
 	    console.log('binding net poll')
 	    var self = this;
 	    var np = dgram.createSocket('udp4')
 	    // var dsp = Fti.FtiRpc.udp(this.ip);
+	    
 	    np.on('error', function(err) {
 		  console.log(`server error:\n${err.stack}`);
 		  np.close();
 		});
 
 	    np.on("listening", function () {
+	       console.log('np listening = ', np.address().port);
 	       // self.NetPollEvents('192.168.33.50').init_net_poll_events(np.address().port);
 	   	   self.init_net_poll_events(np.address().port);
+	   	    // self.init_net_poll_events('192.168.33.50');
 
 	    });
 
 	    np.on('message', function(e,rinfo){
-	        console.log("new message from: "+rinfo.address)
-
+	       console.log("new message from: "+rinfo.address, e)
+	       // self.process_sig_packet(e)
+	       // self.parse_net_poll_event(e);
+	       
 	      if(self.dspip == rinfo.address){
 	         console.log(e)
 	        if(e)
 	        {
-	          self.parse_net_poll_event(e);
+	          // self.parse_net_poll_event(e);
+	          self.process_sig_packet(e)
 	        }
 	        e = null;
 	        rinfo = null;
@@ -277,8 +292,10 @@ class scope_collector {
 	init_net_poll_events(port){
 	    var self = this;
 	    var dsp = this.dsp;
+	    console.log("init np hit on port = ", port)
 	    dsp.rpc1(19,[100,port], "",1.0, function(e, r){
-	      console.log(e,r)
+	      console.log('init np message = ', e,r)
+	      self.process_sig_packet(e)
 	    });
 	}
 
@@ -293,19 +310,67 @@ class scope_collector {
 	    if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
 	        console.log('PROD_REC_VAR')
 	        console.log(buf.slice(9).toString())
-	        if( self.state.askProd){
-	          this.setState({prec:buf.slice(9),askProd:false})
+	        if( self.askProd){
+	          // this.setState({prec:buf.slice(9),askProd:false})
+	          this.prec=buf.slice(9)
 	        }
 	    }
 	    else if(32768 == (key & 0xf000)){
 	        console.log('PROD_SYS_VAR')
 	        console.log(buf.slice(9))
-	    	if( self.state.askSys){
-	       	 this.setState({srec:buf.slice(9),askSys:false})
+	    	if( self.askSys){
+	       	 // this.setState({srec:buf.slice(9),askSys:false})
+	       	 this.srec=buf.slice(9)
 	    	}
 	    }
 	  
 	  }
+
+	plotCallBack (data){
+	    console.log(data)
+	    var graphOptions = {filename: "scope-data", fileopt: "overwrite"};
+		plotly(data, graphOptions, function (err, msg) {
+		    // console.log(msg);
+		});
+	    // var divid = document.getElementById(this.props.plotDivId);
+	    // Plotly.newPlot(divid, data[0], this.state.layout);
+	      /*if((divid.data.length!=0)||(divid.data.length != data[0].length)){ Plotly.newPlot(divid, data[0], this.state.layout);}else{
+	         Plotly.plot(divid, data[0], this.state.layout);
+	      }*/
+	     
+	      
+	      // Plotly.redraw(divid);
+	      // this.setState({data:data[0], hastrace:true, ra:[], xa:[], triggerOn:false})
+	      //this.props.setHighlight(data[1])
+	}
+
+	process_sig_packet(pkt){
+		// console.log("process signal packet")
+	    var ind = this.ind
+	    var self = this;
+	    ind--;
+	    var idx = pkt.readInt16LE(0)//pkt.readInt16LE(0);
+	    var r = pkt.readInt16LE(2);
+	    var x = pkt.readInt16LE(4);
+	    var ra = this.ra;
+	    var xa = this.xa;
+	    var ra_Array = Array.prototype.slice(ra);
+	    var xa_Array = Array.prototype.slice(xa);
+	    ra = Array.prototype.push(r);
+	    xa = Array.prototype.push(x);
+	    ra = ra.toString();
+	    xa = xa.toString();
+	    console.log(idx,r,x)
+
+	    self = ({ra:ra, xa:xa, ind:ind})
+	    if(idx==1){
+	       var dat = [[{"y":ra.slice(0),"type":"scatter","mode":"lines","connectgaps":true,"name":"R Channel"},
+	                      {"y":xa.slice(0),"type":"scatter","mode":"lines","connectgaps":true,"name":"X Channel"}], 0]
+	      this.plotCallBack(dat)
+	   	    // console.log(dat)
+	  }
+
+	}
 
 	setHaloParams(f,n,s, callBack){
 	    console.log(f)
@@ -313,8 +378,8 @@ class scope_collector {
 
 	    dsp.rpc1(KERN_API_RPC, [KAPI_IBTEST_PASSES_SS_WRITE, s], "",1.0, function(){
 	        console.log('SS set');
-	        //setTimeout()
-	        //98%32 = 2
+	        setTimeout()
+	        // 98%32 = 2
 
 	        dsp.rpc1(KERN_API_RPC, [KAPI_IBTEST_PASSES_FE_WRITE, f], "",1.0, function(){
 	          console.log("FE set")
@@ -333,7 +398,7 @@ class scope_collector {
 	  }
 
     haloTest(t){
-	    console.log(t)
+	    console.log('halo test with test# = ',t)
 	    var dsp = this.dsp;
 	    if(t == 0){
 	       dsp.rpc0(6,[3*231,5,1]);
@@ -344,7 +409,7 @@ class scope_collector {
 	            dsp.rpc0(KERN_API_RPC, [KAPI_RPC_TEST, 1]);
 	            console.log('testing')
 	          }, HALO_TEST_DELAY*1000)
-	          return;
+	          // return;
 	      })
 	    }else if(t == 2){
 	       this.setHaloParams(0,1,0, function(){
