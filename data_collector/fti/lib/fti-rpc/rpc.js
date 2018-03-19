@@ -39,14 +39,13 @@ class FtiRpc{
 
 	}
 	rpc1(func,args,string,timeout,callBack){
-		console.log("rpc1 from rcp.js")
 		var self = this
 		var payload = this.payloadForRpc(func,args,string);
 		var packet = this.frame(payload);
-		// this.port.write(packet);
-		// this.port.callBack = callBack;
-		this.write(packet);
-		this.callBack = callBack;
+		this.port.write(packet);
+		this.port.callBack = callBack;
+		// this.write(packet);
+		// this.callBack = callBack;
 	}
 	rpc2(payload,callback){
 		console.log(payload)
@@ -91,7 +90,7 @@ class FtiRpc{
 			//	string = new Buffer(string); not going to deal with this yet
 		}
 		payload = this.addCheckSum(payload);
-		console.log('payloadForRpc payload=',payload)
+		// console.log('payloadForRpc payload=',payload)
 		return new Buffer(payload); // must send payload as a buffer array of octet
 		// return (payload); // must send payload as a buffer array of octet
 
@@ -177,16 +176,14 @@ class FtiRpcUdp extends FtiRpc{
 			return this;
 		}
 		this.port = new FtiRpcUdpSocket(host,port)
-		console.log('line 180 FtiRpcUdp creates a new port = ',this.port)
+		// console.log('line 180 FtiRpcUdp creates a new port = ',this.port)
 	}
 	rpc0(func,args,string,callBack){
 		var payload = this.payloadForRpc(func,args,string);
-		console.log('this is rpc0',payload)
+		console.log(payload)
 		var packet = this.frame(payload);
 		this.port.write(packet);
 		this.port.callBack = function(){
-		// this.write(packet);
-		// this.callBack = function(){
 			console.log('no callBack set')
 		}
 	}
@@ -336,18 +333,17 @@ class FtiRpcUdpSocket{
 		this.socket.on('message',function(e, rinfo){
 			self.callBack(e, rinfo)
 		})
-		console.log('FtiRpcUDpSocket port', this)
+			// console.log('FtiRpcUDpSocket port', this)
 		return this
 
 	}
 	write(packet){
 		var ip = this.rem_ip.toString();
-		console.log(' write packet');
 		this.socket.send(packet, 0, packet.length, this.rem_port, ip, function(){
-			console.log('packet written write packet line 334')
 		});
 	}
 	purge(){/*does nothing for udp*/}
+	
 	getPayload(sec, callBack){
 		var ack =""
 		var err;

@@ -635,7 +635,7 @@ class ArmRpc extends ArmRpcBase{
 			for(var i=0;i<pad;i++){
 				parry.push(0)
 			}
-			console.log('pad size: ' + pad.toString())
+			// console.log('pad size: ' + pad.toString())
 			var bu = new Buffer(2)//[dat.length]);
 			bu.writeUInt16LE(dat.length)
 			dat = Buffer.concat([bu ,dat, new Buffer(parry)])
