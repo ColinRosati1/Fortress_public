@@ -58,6 +58,10 @@ const KAPI_IBTEST_PASSES_FE_WRITE = 90//212
 const KAPI_IBTEST_PASSES_NFE_WRITE = 94
 const KAPI_IBTEST_PASSES_SS_WRITE = 98
 const NP_RPC = 13
+
+const KAPI_RPC_ETHERNETIP = 100;
+const KAPI_RPC_REJ_DEL_CLOCK_READ = 70;
+const DRPC_NUMBER = 19;
 // ####################################################################
 // GPIO opens pins
 // ####################################################################
@@ -103,7 +107,9 @@ function buttonpress(button){
 	var a = 0;
 	var i = 1;
 
-	if(button == 0){
+	setTimeout(function() {  
+	 if(button == 0){
+	 	// Fti_Scope();
 		for (i = 0; i < 5; i ++){
 			 setTimeout(function(){
 				var b = a%2;
@@ -112,9 +118,13 @@ function buttonpress(button){
 			 },100);
 			i++;
 		}
-		Fti_Scope();
+
+		setTimeout(function(){ Fti_Scope()},1600);
+		button = 1;
 		// interceptor();
 	}
+	button =1;
+	},200);
 
 	if(button_close == 0){
 			for (i = 0; i < 5; i ++){
@@ -129,6 +139,7 @@ function buttonpress(button){
 			}
 			setTimeout(function(){process.exit(-1)},2000);
 		}
+
 	wpi.digitalWrite(11, 0);	//LED off
 	wpi.digitalWrite(10, 0);	//LED off
 
@@ -151,23 +162,23 @@ function main() {
 //async method nesting the file writing function inside of this function
 //must nest callback in order for stack to move out of scope
 // ####################################################################
-function writer(Obj_Type,data, DataSize)
-{
+function writer(data, DataSize)
+{	
 	var netinfo= [];
 	var netinfo_json= [];
+	
+	console.log('writer data = ', data);
+	// child = exec("date", function (error, stdout) {
+	  fs.appendFile(path,'['+data+']',function(err){});
+	  //  if (error !== null) {
+	  //   console.log('exec error: ' + error);
+	  //   return;
+	  // }
 
-	// console.log('writer has been hit')
-	child = exec("date", function (error, stdout) {
-	  fs.appendFile(path,'\n'+stdout+Obj_Type+'\n'+netinfo+'}'+'\n',function(err){});
-	   if (error !== null) {
-	    console.log('exec error: ' + error);
-	    return;
-	  }
-
-	  jsonfile.writeFile(file,stdout + Obj_Type + netinfo_json, {flag: 'a'}, function (err) {
-		  console.error(err)
-		})
-	});
+	 //  jsonfile.writeFile(file,stdout + Obj_Type + netinfo_json, {flag: 'a'}, function (err) {
+		//   console.error(err)
+		// })
+	// });
 }
 
 // ####################################################################
@@ -183,9 +194,7 @@ class scope_collector {
 		var dspip = "192.168.33.50"
 		var FtiRpc = fti.Rpc.FtiRpc;
 	    var arm = new Fti.ArmRpc.ArmRpc(dspip);
-	    var ph = function(e){
-	      console.log(e)
-	    }
+	    var ph;
 	    
 	    var packetHandler = ph;
 	    var port = 10001
@@ -206,23 +215,23 @@ class scope_collector {
 	        	setTimeout(function(){
 	        		self.bindNP(dspip, function (test){
 						setTimeout(function(){
-							self.dsp_manual_test(function(array){
-		            			self.haloTest(1);
-		            		});
-	            		},2000);
+							// self.dsp_manual_test(function(array){
+		            			// self.haloTest(0);
+
+
+		            			self.photoEye(); // this is hte only function you need for this test. read scope when Photo eye tripped
+		            		// });
+	            		},5000);
 	            	});
             	},5000);
 	        });
 	      });
 	    });
-
-
 	}
 
-
-	bindSo(ip, callback){
-	    // var dsp = Fti.FtiRpc.udp(this.ip);
+	bindSo(ip,callback){
 	    var self = this;
+	    var dsp = this.dsp;
 	    var so = dgram.createSocket({type: 'udp4', reuseAddr: true})
 
 	    so.on('error', function(err) {
@@ -230,46 +239,43 @@ class scope_collector {
 		  so.close();
 		});
 
-		so.on("listening", function () {
-	       // self.NetPollEvents('192.168.33.50').init_net_poll_events(np.address().port);
-	   	   self.init_net_poll_events(so.address().port);
-	    });
-
 		so.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
 	      console.log('bound')
 	    })
 
 		so.on('message', function(e,rinfo){
-	          console.log('bound socket message = ',e)
-	          // var ph;
+	          console.log('bind socket message')
 	          var packetHandler = function(e){
 			      // console.log(e)
 			      self.parse_net_poll_event(e);
 			    }
-	          // console.log('package handler',self.packetHandler(e))
 	          packetHandler(e)
-	          callback()
 		});
-		// callback()
+		callback()
 	}
 
   	bindNP(ip, callback){
 	    console.log('binding net poll')
 	    var self = this;
+	    var port = this.port
+	    var dsp = this.dsp;
 	    var np = dgram.createSocket({type: 'udp4', reuseAddr: true})
 	    var ra =[]
 		var xa =[]
 		var idx 
-	    // var dsp = Fti.FtiRpc.udp(this.ip);
+
 	    np.on('error', function(err) {
 		  console.log(`server error:\n${err.stack}`);
 		  np.close();
 		});
 
 	    np.on("listening", function () {
-	       // self.NetPollEvents('192.168.33.50').init_net_poll_events(np.address().port);
-	   	   self.init_net_poll_events(np.address().port);
+	    	console.log('np listening')
+	   	   dsp.rpc1(19,[100,port], "",1.0, function(e, r){
+	      		console.log('THIS IS MY DSP MESSAGE',e,r)
+	    	});
 	    });
+	    
 	    np.bind({address: '0.0.0.0',port: 0,exclusive: true});
 
 		np.on('message', function(e,rinfo){
@@ -281,7 +287,7 @@ class scope_collector {
 				var x = e.readInt16LE(4);
 				ra.push(r);
 				xa.push(x);
-				console.log([r,x,idx]);
+				// console.log([r,x,idx]);
 				// self.parse_net_poll_event(e);
 				if (idx == 1){
 					// console.log(ra);
@@ -297,6 +303,8 @@ class scope_collector {
 				}
 		});
 
+		setTimeout(function(){callback()},5000);
+		// np.bind({address: '0.0.0.0',port: 0,exclusive: true});
 
 		np.on('close', function(){
 			console.log('closing')
@@ -304,24 +312,26 @@ class scope_collector {
 			// np.close();
 		});
 
-		setTimeout(function(){
-			if(idx != 1){
-				np.close();
-			}else{
-				np.unref();
-				np.close();
-			}
-			callback()
-		}, 1000);
+		// setTimeout(function(){
+		// 	if(idx != 1){
+		// 		np.close();
+		// 	}else{
+		// 		np.unref();
+		// 		np.close();
+		// 	}
+		// 	callback()
+		// }, 1000);
 
 	}
 
 	init_net_poll_events(port){
 	    var self = this;
 	    var dsp = this.dsp;
+	    var np = dgram.createSocket({type: 'udp4', reuseAddr: true})
+	   
 	    dsp.rpc1(19,[100,port], "",1.0, function(e, r){
-	      console.log(e,r)
-	    });
+      		console.log(e,r)
+    	});
 	}
 
 	parse_net_poll_event(buf){
@@ -332,23 +342,30 @@ class scope_collector {
 	//  console.log("Key: " + "0x" + key.toString(16));
 	    var value = buf.readUInt16LE(2);
 
-	    if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
-	        console.log('PROD_REC_VAR')
-	        console.log(buf.slice(9).toString())
-	        if( self.askProd){
-	          // this.setState({prec:buf.slice(9),askProd:false})
-	          this.prec=buf.slice(9)
-	          this.askProd=false;
-	        }
-	    }
-	    else if(32768 == (key & 0xf000)){
-	        console.log('PROD_SYS_VAR')
-	        console.log(buf.slice(9))
-	    	if( self.askSys){
-	       	 this.setState({srec:buf.slice(9),askSys:false})
-	    	}
-	    }
+	    // if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
+	    //     console.log('PROD_REC_VAR')
+	    //     console.log(buf.slice(9).toString())
+	    //     if( self.askProd){
+	    //       // this.setState({prec:buf.slice(9),askProd:false})
+	    //       this.prec=buf.slice(9)
+	    //       this.askProd=false;
+	    //     }
+	    // }
+	    // else if(32768 == (key & 0xf000)){
+	    //     console.log('PROD_SYS_VAR')
+	    //     console.log(buf.slice(9))
+	    // 	if( self.askSys){
+	    //    	 this.setState({srec:buf.slice(9),askSys:false})
+	    // 	}
+	    // }
 
+	    if(buf)
+	        {
+	            var idx = buf.readInt16LE(0);
+				var r = buf.readInt16LE(2);
+				var x = buf.readInt16LE(4);
+				console.log([r,x,idx]);
+			}
 	  }
 
 	setHaloParams(f,n,s, callBack){
@@ -424,35 +441,26 @@ class scope_collector {
 		var ra =[]
 		var xa =[]
 		var idx 
-		// var s = dgram.createSocket('udp4');
 		var s = dgram.createSocket({'type': 'udp4', 'reuseAddr': true})
 		var dsp = this.dsp;
 		var self = this
-		dsp.rpc0(6,[3*231,3]);
-			
+		
+		s.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
+			dsp.rpc0(6,[3*231,3]);
+		});
 
-		s.on("listening", function () {
-	       // self.NetPollEvents('192.168.33.50').init_net_poll_events(np.address().port);
-	   	   self.init_net_poll_events(s.address().port);
-	   	   dsp.rpc0(6,[3*231,3]);
-			
-	    });
-
-		setTimeout(function(){
-			s.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
-				dsp.rpc0(6,[3*231,3]);
-			});
-		},8000);
 		s.on('message', function(e,rinfo){
-			console.log('receiving dsp manual test')
+			// console.log('receiving dsp manual test')
 			if(e){
-				//console.log(e.byteLength)
-				idx = e.readInt16LE(0);
+				
+				var idx = e.readInt16LE(0);
 				var r = e.readInt16LE(2);
 				var x = e.readInt16LE(4);
+				var rx_data=[r,x,idx];
 				ra.push(r);
 				xa.push(x);
-				console.log([r,x,idx]);
+				// console.log('rx data',rx_data);
+				writer(rx_data)
 				if (idx == 1){
 					// console.log(ra);
 					// console.log(xa);
@@ -463,15 +471,16 @@ class scope_collector {
 			}else{
 				s.close();
 			}
-			setTimeout(function(){
-				callBack()
-			},5000);
+			// setTimeout(function(){
+			// 	// callBack()
+			// },5000);
 		});
 
-		// s.on('close', function(){
-		// 	console.log('closing')
-		// 	s.unref();
-		// });
+		s.on('close', function(){
+			console.log('closing')
+			s.unref();
+			callBack()
+		});
 
 		// setTimeout(function(){
 		// 	if(idx != 1){

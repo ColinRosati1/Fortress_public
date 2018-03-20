@@ -39,6 +39,7 @@ class FtiRpc{
 
 	}
 	rpc1(func,args,string,timeout,callBack){
+		console.log("rpc1")
 		var self = this
 		var payload = this.payloadForRpc(func,args,string);
 		var packet = this.frame(payload);
@@ -48,7 +49,7 @@ class FtiRpc{
 		// this.callBack = callBack;
 	}
 	rpc2(payload,callback){
-		console.log(payload)
+		// console.log(payload)
 		var packet = this.frame(payload);
 		this.port.write(packet)
 		this.port.callBack = callback;
@@ -58,17 +59,17 @@ class FtiRpc{
 	send_packet(packet, timeout){
 
 	}
-	// rpc0(func,args,string,callBack){
-	// 	var payload = this.payloadForRpc(func,args,string);
-	// 	console.log('this is rpc0',payload)
-	// 	var packet = this.frame(payload);
-	// 	this.port.write(packet);
-	// 	this.port.callBack = function(){
-	// 	// this.write(packet);
-	// 	// this.callBack = function(){
-	// 		console.log('no callBack set')
-	// 	}
-	// }
+	rpc0(func,args,string,callBack){
+		var payload = this.payloadForRpc(func,args,string);
+		console.log('this is rpc0',payload)
+		var packet = this.frame(payload);
+		this.port.write(packet);
+		this.port.callBack = function(){
+		// this.write(packet);
+		// this.callBack = function(){
+			console.log('no callBack set')
+		}
+	}
 	payloadForRpc(func,args,string){
 		var payload = [func]//String.fromCharCode(func)
 		// console.log('payloadForRpc payload=', payload)
@@ -322,7 +323,7 @@ class FtiRpcUdpSocket{
 	constructor(host,port){
 		port = port || 10001
 		this.rem_ip = host;
-		this.callBack = function(){console.log('no callback set')}
+		this.callBack = function(){console.log('no callback set')};
 		this.rem_port = port;
 		this.socket = dgram.createSocket('udp4');
 		this.socket.bind(0,'0.0.0.0', function(){
@@ -331,7 +332,7 @@ class FtiRpcUdpSocket{
 		var self = this;
 
 		this.socket.on('message',function(e, rinfo){
-			self.callBack(e, rinfo)
+			// 	self.callBack(e, rinfo)
 		})
 			// console.log('FtiRpcUDpSocket port', this)
 		return this

@@ -404,7 +404,7 @@ class ArmRpcBase{
 		var self = this;
 		this.packet_for([11,5],function(p){
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
-			console.log(p.byteLength)
+			// console.log(p.byteLength)
 			console.log('dsp_open')
 
 		})
@@ -420,64 +420,7 @@ class ArmRpcBase{
 			callback(payload);
 		})
 		// return;
-	
 	}
-
-	// bindSo(ip){
-	//     var dsp = Fti.FtiRpc.udp(this.ip);
-	//     var self = this;
-	//     var so = dgram.createSocket({'type':'udp4'})
-
-	//     so.on('error', function(err) {
-	// 	  console.log(`server error:\n${err.stack}`);
-	// 	  so.close();
-	// 	});
-
-	// 	so.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
-	//       console.log('bound')
-	//       		  })
-
-	// 	so.on('message', function(e,rinfo){
-	//           console.log(e)
-	//           console.log('package handler',self.state.packetHandler(e))
-	//           self.state.packetHandler(e)
-	// 	  })
-	// 	});
-	// }
-    
- //  bindNP(ip){
- //   console.log('binding net poll')
-   
- //   var self = this;
- //   var np = dgram.createSocket('udp4')
- //   var dsp = Fti.FtiRpc.udp(this.ip);
- //   np.on('error', function(err) {
-	//   console.log(`server error:\n${err.stack}`);
-	//   np.close();
-	// });
- //    np.on("listening", function () {
- //      var listening = new NetPollEvents('192.168.33.50').init_net_poll_events(np.address().port);
- //    });
-
- //    np.on('message', function(e,rinfo){
- //        console.log("new message from: "+rinfo.address)
-
- //      if(self.dspip == rinfo.address){
- //         console.log(e)
- //        if(e)
- //        {
- //          self.parse_net_poll_event(e);
- //        }
- //        e = null;
- //        rinfo = null;
- //      }
- //    });
-
- //    np.bind({address: '0.0.0.0',port: 0,exclusive: true});
- //    // return({np:np})	
- //  }
-
- 
 }
 
 class NetPollEvents{
