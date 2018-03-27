@@ -332,7 +332,7 @@ class FtiRpcUdpSocket{
 		var self = this;
 
 		this.socket.on('message',function(e, rinfo){
-			// 	self.callBack(e, rinfo)
+				self.callBack(e, rinfo)
 		})
 			// console.log('FtiRpcUDpSocket port', this)
 		return this

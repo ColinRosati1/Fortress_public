@@ -36,15 +36,15 @@ var sys = require('util')
 var exec = require('child_process').exec;
 var dgram = require('dgram');
 var jsonfile = require('jsonfile')
-var _ = require('lodash');
 var file = 'data.json';
 var child;
+var path = ("scopedatafile.txt");
+
 
 // sets the values for pin HIGH and LOW.
 const HIGH = 1;
 const LOW = 0;
-var secTimeout = 2000;
-var path = ("scopedatafile.txt");
+const secTimeout = 2000;
 
 const HALO_TEST_DELAY = 1;
 const DSP_SCOPE_PORT = 10004;
@@ -62,6 +62,8 @@ const NP_RPC = 13
 const KAPI_RPC_ETHERNETIP = 100;
 const KAPI_RPC_REJ_DEL_CLOCK_READ = 70;
 const DRPC_NUMBER = 19;
+
+
 // ####################################################################
 // GPIO opens pins
 // ####################################################################
@@ -162,23 +164,21 @@ function main() {
 //async method nesting the file writing function inside of this function
 //must nest callback in order for stack to move out of scope
 // ####################################################################
-function writer(data, DataSize)
+function writer(data)
 {	
 	var netinfo= [];
 	var netinfo_json= [];
+	// var wstream = fs.createWriteStream(path);
 	
 	console.log('writer data = ', data);
-	// child = exec("date", function (error, stdout) {
-	  fs.appendFile(path,'['+data+']',function(err){});
-	  //  if (error !== null) {
-	  //   console.log('exec error: ' + error);
-	  //   return;
-	  // }
-
-	 //  jsonfile.writeFile(file,stdout + Obj_Type + netinfo_json, {flag: 'a'}, function (err) {
-		//   console.error(err)
-		// })
-	// });
+	child = exec("date", function (error, stdout) {
+	  // fs.createWriteStream(path, data,'utf16le')
+	  // fs.appendFile(path , data , function(err, data){});
+	   fs.writeFile(path , data ,{flag:'a'}, function(err, data){});
+		 // if (err) console.log('error writing');
+   		 // console.log("Successfully Written to File.");
+	  // });
+	});
 }
 
 // ####################################################################
@@ -195,7 +195,6 @@ class scope_collector {
 		var FtiRpc = fti.Rpc.FtiRpc;
 	    var arm = new Fti.ArmRpc.ArmRpc(dspip);
 	    var ph;
-	    
 	    var packetHandler = ph;
 	    var port = 10001
 	   	var dsp = FtiRpc.udp(dspip);
@@ -203,26 +202,27 @@ class scope_collector {
 	    this.ip = dspip;
 	    this.dsp = dsp
 
-	    console.log("now echo");
-	    var pk;
+	    console.log("Scope echo...");
 	    
 	    arm.echo_cb(function(array){
 	      console.log("echoed")
-	      // console.log(array);
+	      console.log(array);
 	      arm.dsp_open_cb(function(pl){
 	        console.log('dspn open payload = ',pl)
         	self.bindSo(dspip, function(test){
 	        	setTimeout(function(){
-	        		self.bindNP(dspip, function (test){
-						setTimeout(function(){
+	     //    		self.bindNP(dspip, function (test){
+						// setTimeout(function(){
 							// self.dsp_manual_test(function(array){
 		            			// self.haloTest(0);
 
 
-		            			self.photoEye(); // this is hte only function you need for this test. read scope when Photo eye tripped
+		            			self.photoEye(function(){
+		            				self.rpc_stream(); 
+		            			}); // this is hte only function you need for this test. read scope when Photo eye tripped
 		            		// });
-	            		},5000);
-	            	});
+	            	// 	},5000);
+	            	// });
             	},5000);
 	        });
 	      });
@@ -230,6 +230,7 @@ class scope_collector {
 	}
 
 	bindSo(ip,callback){
+		
 	    var self = this;
 	    var dsp = this.dsp;
 	    var so = dgram.createSocket({type: 'udp4', reuseAddr: true})
@@ -246,9 +247,11 @@ class scope_collector {
 		so.on('message', function(e,rinfo){
 	          console.log('bind socket message')
 	          var packetHandler = function(e){
-			      // console.log(e)
+			      console.log(e);
+			      // writer(e);
 			      self.parse_net_poll_event(e);
 			    }
+			  // self.	haloTest(1)
 	          packetHandler(e)
 		});
 		callback()
@@ -287,11 +290,7 @@ class scope_collector {
 				var x = e.readInt16LE(4);
 				ra.push(r);
 				xa.push(x);
-				// console.log([r,x,idx]);
-				// self.parse_net_poll_event(e);
 				if (idx == 1){
-					// console.log(ra);
-					// console.log(xa);
 					callBack([ra,xa]);
 					np.close();
 					np.unref();
@@ -304,24 +303,11 @@ class scope_collector {
 		});
 
 		setTimeout(function(){callback()},5000);
-		// np.bind({address: '0.0.0.0',port: 0,exclusive: true});
 
 		np.on('close', function(){
 			console.log('closing')
 			np.unref();
-			// np.close();
 		});
-
-		// setTimeout(function(){
-		// 	if(idx != 1){
-		// 		np.close();
-		// 	}else{
-		// 		np.unref();
-		// 		np.close();
-		// 	}
-		// 	callback()
-		// }, 1000);
-
 	}
 
 	init_net_poll_events(port){
@@ -338,34 +324,41 @@ class scope_collector {
 	    var key = buf.readUInt16LE(0);
 	    var res = "";
 	    var self = this;
+	    var counter = this.counter
+	    console.log('pre parsed buf', buf)
 	    console.log("packet received: " + buf.toString('hex'));
-	//  console.log("Key: " + "0x" + key.toString(16));
+		console.log("Key: " + "0x" + key.toString(16));
 	    var value = buf.readUInt16LE(2);
 
-	    // if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
-	    //     console.log('PROD_REC_VAR')
-	    //     console.log(buf.slice(9).toString())
-	    //     if( self.askProd){
-	    //       // this.setState({prec:buf.slice(9),askProd:false})
-	    //       this.prec=buf.slice(9)
-	    //       this.askProd=false;
-	    //     }
-	    // }
-	    // else if(32768 == (key & 0xf000)){
-	    //     console.log('PROD_SYS_VAR')
-	    //     console.log(buf.slice(9))
-	    // 	if( self.askSys){
-	    //    	 this.setState({srec:buf.slice(9),askSys:false})
-	    // 	}
-	    // }
+	    if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
+	        console.log('PROD_REC_VAR')
+	        console.log(buf.slice(9).toString())
+	        if( self.askProd){
+	          // this.setState({prec:buf.slice(9),askProd:false})
+	          this.prec=buf.slice(9)
+	          this.askProd=false;
+	        }
+	    }
+	    else if(32768 == (key & 0xf000)){
+	        console.log('PROD_SYS_VAR')
+	        console.log(buf.slice(9))
+	    	if( self.askSys){
+	       	 this.setState({srec:buf.slice(9),askSys:false})
+	    	}
+	    }
 
 	    if(buf)
 	        {
 	            var idx = buf.readInt16LE(0);
 				var r = buf.readInt16LE(2);
 				var x = buf.readInt16LE(4);
+				var rx_data = ([r,x,idx])
 				console.log([r,x,idx]);
+				writer(buf)
 			}
+		else { 
+			console.log("invalid buf"); return
+		}
 	  }
 
 	setHaloParams(f,n,s, callBack){
@@ -425,15 +418,29 @@ class scope_collector {
 	    setTimeout(function(){return },3000);
   }
 
-  photoEye(){
+  photoEye(callback){
+  	console.log('photoeye...')
     var dsp = this.dsp;
     dsp.rpc0(5,[0,1,1])
     setInterval(function () {
         dsp.rpc0(5,[0,1,1]);
         setTimeout(function () {
             dsp.rpc0(NP_RPC,[]);
+            callback();
         }, 100)
-    },10000)
+    },3000)
+  }
+
+  rpc_stream(){
+  	console.log('stream rpc triggered...')
+    var dsp = this.dsp;
+    setInterval(function () {
+        dsp.rpc0(22,[26]); // streaming rpc
+        console.log('streaming ')
+        // setTimeout(function () {
+        //     dsp.rpc0(NP_RPC,[]);
+        // }, 100)
+    },1000)
   }
 
   dsp_manual_test(callBack){
@@ -493,61 +500,12 @@ class scope_collector {
 }
 
 
-
-// ####################################################################
-// Locats and logs Arm scope data
-// ####################################################################
-function Fti_Locate(){
-	'use strict'
-
-	// var ArmLocator = arloc.ArmLocator;
-	arloc.ArmLocator.scan(1500,function(list){
-		//console.log('function returns = ' + JSON.stringify(list))
-		writer(JSON.stringify(list));
-		return (list);
-	});
-
-}
-
-
-
 // ####################################################################
 //  Arm scope data
 
 // ####################################################################
 function Fti_Scope(){
-	// var dspip = "192.168.33.50"
-	// var FtiRpc = fti.Rpc.FtiRpc;
- //    var arm = new Fti.ArmRpc.ArmRpc(dspip);
- //    var self = this;
-
-	// Fti_Locate();
-
-    // var port = 10001
-    // var dsp = FtiRpc.udp(port);
-
-    // console.log("now echo")
-    // var pk =  "MY PACKET"
-    // arm.echo_cb(function(array){
-    //   console.log("echoed")
-    //   console.log(array);
-    //   arm.dsp_open_cb(function(pl){
-    //     // console.log('dspn open payload = ',pl)
-    //     arm.bindSo(dspip)
-    //     setTimeout(function(){
-    //        arm.bindNP(dspip)
-    //          setTimeout(function(pk){
-	   //   	 	haloTest(dspip);
-	   //       },1000);
-    //      },5000);
-    //   })
-    // });
-
-	// haloTest();
-
 	var scope = new scope_collector();
-
-
 }
 
 
