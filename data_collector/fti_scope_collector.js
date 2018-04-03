@@ -26,6 +26,10 @@
 // ####################################################################
 var fs = require('fs');
 var wpi = require('wiringpi-node'); // create an instance of the wiringpi-node GPIO pin modes
+var util = require('util');
+var stream = require('stream');
+var Writable = stream.Writable || require('readable-stream').Writable;
+
 var fti = require('./fti/index.js');  // move all requires up top
 var arloc = require('./fti/lib/fti-rpc/arm_find.js');
 var BufferPack = require('bufferpack');
@@ -109,7 +113,7 @@ function buttonpress(button){
 	var a = 0;
 	var i = 1;
 
-	setTimeout(function() {  
+	setTimeout(function() {
 	 if(button == 0){
 	 	// Fti_Scope();
 		for (i = 0; i < 5; i ++){
@@ -165,20 +169,36 @@ function main() {
 //must nest callback in order for stack to move out of scope
 // ####################################################################
 function writer(data)
-{	
+{
 	var netinfo= [];
 	var netinfo_json= [];
-	// var wstream = fs.createWriteStream(path);
-	
+	var data_buffer = new Buffer(data)
+
 	console.log('writer data = ', data);
 	child = exec("date", function (error, stdout) {
 	  // fs.createWriteStream(path, data,'utf16le')
 	  // fs.appendFile(path , data , function(err, data){});
-	   fs.writeFile(path , data ,{flag:'a'}, function(err, data){});
+	   // fs.writeFile(path , data ,{flag:'a'}, function(err, data){});
 		 // if (err) console.log('error writing');
    		 // console.log("Successfully Written to File.");
 	  // });
 	});
+
+	 var wstream = fs.createWriteStream(path, {flags: 'a'})
+	 wstream.write(data );
+
+
+	//  function MyStream(data) {
+	//  		console.log('inside Mystream writer')
+	// 	  Writable.call(this, data);
+ //     }
+	//   util.inherits(MyStream, Writable);
+
+	//  MyStream.prototype._write = function (chunk, enc, cb) {
+	// 	 // store chunk, then call cb when done
+ //     	 cb();
+ //     };
+
 }
 
 // ####################################################################
@@ -203,7 +223,7 @@ class scope_collector {
 	    this.dsp = dsp
 
 	    console.log("Scope echo...");
-	    
+	    debugger
 	    arm.echo_cb(function(array){
 	      console.log("echoed")
 	      console.log(array);
@@ -218,7 +238,7 @@ class scope_collector {
 
 
 		            			self.photoEye(function(){
-		            				self.rpc_stream(); 
+		            				self.rpc_stream();
 		            			}); // this is hte only function you need for this test. read scope when Photo eye tripped
 		            		// });
 	            	// 	},5000);
@@ -230,7 +250,7 @@ class scope_collector {
 	}
 
 	bindSo(ip,callback){
-		
+
 	    var self = this;
 	    var dsp = this.dsp;
 	    var so = dgram.createSocket({type: 'udp4', reuseAddr: true})
@@ -247,7 +267,8 @@ class scope_collector {
 		so.on('message', function(e,rinfo){
 	          console.log('bind socket message')
 	          var packetHandler = function(e){
-			      console.log(e);
+			      console.log(typeof(e));
+
 			      // writer(e);
 			      self.parse_net_poll_event(e);
 			    }
@@ -265,7 +286,7 @@ class scope_collector {
 	    var np = dgram.createSocket({type: 'udp4', reuseAddr: true})
 	    var ra =[]
 		var xa =[]
-		var idx 
+		var idx
 
 	    np.on('error', function(err) {
 		  console.log(`server error:\n${err.stack}`);
@@ -278,7 +299,7 @@ class scope_collector {
 	      		console.log('THIS IS MY DSP MESSAGE',e,r)
 	    	});
 	    });
-	    
+
 	    np.bind({address: '0.0.0.0',port: 0,exclusive: true});
 
 		np.on('message', function(e,rinfo){
@@ -314,7 +335,7 @@ class scope_collector {
 	    var self = this;
 	    var dsp = this.dsp;
 	    var np = dgram.createSocket({type: 'udp4', reuseAddr: true})
-	   
+
 	    dsp.rpc1(19,[100,port], "",1.0, function(e, r){
       		console.log(e,r)
     	});
@@ -327,7 +348,6 @@ class scope_collector {
 	    var counter = this.counter
 	    console.log('pre parsed buf', buf)
 	    console.log("packet received: " + buf.toString('hex'));
-		console.log("Key: " + "0x" + key.toString(16));
 	    var value = buf.readUInt16LE(2);
 
 	    if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
@@ -354,9 +374,11 @@ class scope_collector {
 				var x = buf.readInt16LE(4);
 				var rx_data = ([r,x,idx])
 				console.log([r,x,idx]);
+
+				//by pasing the parsing and sending the buffer to be written
 				writer(buf)
 			}
-		else { 
+		else {
 			console.log("invalid buf"); return
 		}
 	  }
@@ -447,11 +469,11 @@ class scope_collector {
   		console.log('dsp manual test')
 		var ra =[]
 		var xa =[]
-		var idx 
+		var idx
 		var s = dgram.createSocket({'type': 'udp4', 'reuseAddr': true})
 		var dsp = this.dsp;
 		var self = this
-		
+
 		s.bind(DSP_SCOPE_PORT,'0.0.0.0', function(){
 			dsp.rpc0(6,[3*231,3]);
 		});
@@ -459,7 +481,7 @@ class scope_collector {
 		s.on('message', function(e,rinfo){
 			// console.log('receiving dsp manual test')
 			if(e){
-				
+
 				var idx = e.readInt16LE(0);
 				var r = e.readInt16LE(2);
 				var x = e.readInt16LE(4);

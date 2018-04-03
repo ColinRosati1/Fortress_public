@@ -391,9 +391,11 @@ class ArmRpcBase{
 		
 	}
 	echo_cb(callback){
+		if(callback == 0){console.log('no callback')}
 		var self = this;
 		var pkt = [ARM_RPC_ECHO,1,2,3]
 		this.packet_for(pkt,function(p){
+			// console.log('from echo cb ', pkt)
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
 			var payload = ['"'+ self.rem_ip+'",'+ '['+[p]+']'];
 			callback(payload);

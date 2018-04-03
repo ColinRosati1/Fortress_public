@@ -331,10 +331,11 @@ class FtiRpcUdpSocket{
 		});
 		var self = this;
 
-		this.socket.on('message',function(e, rinfo){
+		this.socket.on('message',function(e, rinfo){ // I dont think this actually is ever used in the creation
 				self.callBack(e, rinfo)
+				// console.log('socket from fti arm creation, ',e);
 		})
-			// console.log('FtiRpcUDpSocket port', this)
+		// console.log('FtiRpcUDpSocket port', this)
 		return this
 
 	}
