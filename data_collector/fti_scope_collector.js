@@ -1,31 +1,11 @@
 // ####################################################################
-// uses BCM pinout
 // data_collector.js uses FTI Flash calls to:
 //		* scan available detectors
 // 		* log data from scope, log scan
-
-// TODO connect head to photo eye and test data, ask Bin for help
-// how to connect a photo eye scope???
-	// -what is a scope?
-	// 	scope is the range of data from a stream of current coming from a photo eye.
-	// -photo eye:
-	// A photoelectric sensor, or photo eye, is an equipment used to discover the distance, absence, or presence
- 	// of an object by using a light transmitter, often infrared, and a photoelectric receiver.
- 	// -output a stream of measurable voltage
-
- // connect to 3 ARM devices locally through ethernet cables via fti_scope
- 		// 1. Stealth head, or whatever head
- 		// 2. DSP
- 		// 3. photo eye
-
- 	// TODO clean up scope scan functions
- 			// is is just scope_comb_test()?
- 			// what is arm.echo_cb()?
- 			// what is halo scan_for_dsp_board()?
-
+//		* Christina added streaming rpc  rpc0(22,[26]);
 // ####################################################################
 var fs = require('fs');
-var wpi = require('wiringpi-node'); // create an instance of the wiringpi-node GPIO pin modes
+var wpi = require('wiringpi-node'); // create an instance of the wiringpi-node GPIO pin modes uses BCM pinout
 var util = require('util');
 var stream = require('stream');
 var Writable = stream.Writable || require('readable-stream').Writable;
@@ -42,12 +22,12 @@ var dgram = require('dgram');
 var jsonfile = require('jsonfile')
 var file = 'data.json';
 var child;
-var path = ("scopedatafile.txt");
+var path = ("scopedata.txt");
 
-
-// sets the values for pin HIGH and LOW.
+// RPI GPIO Pins
 const HIGH = 1;
 const LOW = 0;
+
 const secTimeout = 2000;
 
 const HALO_TEST_DELAY = 1;
@@ -89,6 +69,9 @@ function GPIO()
 
 }
 
+// ####################################################################
+// GPIO LED blink
+// ####################################################################
 function blink(LED){
 		var a =1;
 		var b = a%2;
@@ -100,7 +83,9 @@ function blink(LED){
 		wpi.digitalWrite(LED, b);
 	}
 
-
+// ####################################################################
+// GPIO button trigger
+// ####################################################################
 function buttonpress(button){
 	wpi.pinMode(9, wpi.INPUT); //button
 	wpi.pullUpDnControl(9, wpi.PUD_UP)
@@ -120,16 +105,15 @@ function buttonpress(button){
 			 setTimeout(function(){
 				var b = a%2;
 				a++;
-			 	wpi.digitalWrite(11, b);	//LED off
+			 	wpi.digitalWrite(11, b);
 			 },100);
 			i++;
 		}
 
 		setTimeout(function(){ Fti_Scope()},1600);
 		button = 1;
-		// interceptor();
-	}
-	button =1;
+	  }
+	  button =1;
 	},200);
 
 	if(button_close == 0){
@@ -138,22 +122,22 @@ function buttonpress(button){
 					var b = a%2;
 					var c = (b + 1)%2;
 					a++;
-				 	wpi.digitalWrite(11, c);	//LED off
-				 	wpi.digitalWrite(10, b);	//LED off
+				 	wpi.digitalWrite(11, c);
+				 	wpi.digitalWrite(10, b);
 				 },100);
 				i++;
 			}
 			setTimeout(function(){process.exit(-1)},2000);
 		}
 
-	wpi.digitalWrite(11, 0);	//LED off
-	wpi.digitalWrite(10, 0);	//LED off
+	wpi.digitalWrite(11, 0);
+	wpi.digitalWrite(10, 0);
 
 	GPIO();
 }
 
 // ####################################################################
-// GPIO blinking
+// main
 // ####################################################################
 function main() {
 	var i = 0, blinkTime = 10, v = 1;
@@ -165,39 +149,25 @@ function main() {
 
 // ####################################################################
 // writer() writes data to file
-//async method nesting the file writing function inside of this function
-//must nest callback in order for stack to move out of scope
 // ####################################################################
 function writer(data)
 {
+	if(data==0){
+		console.log('no data to write')
+		return
+	}
+
 	var netinfo= [];
 	var netinfo_json= [];
 	var data_buffer = new Buffer(data)
 
 	console.log('writer data = ', data);
 	child = exec("date", function (error, stdout) {
-	  // fs.createWriteStream(path, data,'utf16le')
-	  // fs.appendFile(path , data , function(err, data){});
-	   // fs.writeFile(path , data ,{flag:'a'}, function(err, data){});
-		 // if (err) console.log('error writing');
-   		 // console.log("Successfully Written to File.");
-	  // });
 	});
 
-	 var wstream = fs.createWriteStream(path, {flags: 'a'})
-	 wstream.write(data );
 
-
-	//  function MyStream(data) {
-	//  		console.log('inside Mystream writer')
-	// 	  Writable.call(this, data);
- //     }
-	//   util.inherits(MyStream, Writable);
-
-	//  MyStream.prototype._write = function (chunk, enc, cb) {
-	// 	 // store chunk, then call cb when done
- //     	 cb();
- //     };
+		var wstream = fs.createWriteStream(path,{flags:'a'})
+		wstream.write(data+'\n' );
 
 }
 
@@ -209,6 +179,9 @@ function exit()
 
 }
 
+// ####################################################################
+// scope collector class initializes and triggers RPCs
+// ####################################################################
 class scope_collector {
 	constructor(ip,port){
 		var dspip = "192.168.33.50"
@@ -230,20 +203,9 @@ class scope_collector {
 	      arm.dsp_open_cb(function(pl){
 	        console.log('dspn open payload = ',pl)
         	self.bindSo(dspip, function(test){
-	        	setTimeout(function(){
-	     //    		self.bindNP(dspip, function (test){
-						// setTimeout(function(){
-							// self.dsp_manual_test(function(array){
-		            			// self.haloTest(0);
-
-
-		            			self.photoEye(function(){
-		            				self.rpc_stream();
-		            			}); // this is hte only function you need for this test. read scope when Photo eye tripped
-		            		// });
-	            	// 	},5000);
-	            	// });
-            	},5000);
+        		self.bindNP(dspip, function (test){
+        			self.photoEye(function(){self.rpc_stream()})
+            	});
 	        });
 	      });
 	    });
@@ -267,12 +229,9 @@ class scope_collector {
 		so.on('message', function(e,rinfo){
 	          console.log('bind socket message')
 	          var packetHandler = function(e){
-			      console.log(typeof(e));
-
-			      // writer(e);
-			      self.parse_net_poll_event(e);
+			      // self.parse_net_poll_event(e); // parse socket
+			      writer(e)		// write raw buffer
 			    }
-			  // self.	haloTest(1)
 	          packetHandler(e)
 		});
 		callback()
@@ -301,7 +260,6 @@ class scope_collector {
 	    });
 
 	    np.bind({address: '0.0.0.0',port: 0,exclusive: true});
-
 		np.on('message', function(e,rinfo){
 			console.log('net poll message')
 	        if(e)
@@ -323,7 +281,7 @@ class scope_collector {
 				}
 		});
 
-		setTimeout(function(){callback()},5000);
+		setTimeout(function(){callback()},2000);
 
 		np.on('close', function(){
 			console.log('closing')
@@ -342,41 +300,17 @@ class scope_collector {
 	}
 
 	parse_net_poll_event(buf){
-	    var key = buf.readUInt16LE(0);
-	    var res = "";
-	    var self = this;
-	    var counter = this.counter
-	    console.log('pre parsed buf', buf)
-	    console.log("packet received: " + buf.toString('hex'));
-	    var value = buf.readUInt16LE(2);
-
-	    if(49152 == (key & 0xf000)){// && ((e=="NET_POLL_PROD_SYS_VAR") || (e=="NET_POLL_PROD_REC_VAR")))
-	        console.log('PROD_REC_VAR')
-	        console.log(buf.slice(9).toString())
-	        if( self.askProd){
-	          // this.setState({prec:buf.slice(9),askProd:false})
-	          this.prec=buf.slice(9)
-	          this.askProd=false;
-	        }
-	    }
-	    else if(32768 == (key & 0xf000)){
-	        console.log('PROD_SYS_VAR')
-	        console.log(buf.slice(9))
-	    	if( self.askSys){
-	       	 this.setState({srec:buf.slice(9),askSys:false})
-	    	}
-	    }
-
 	    if(buf)
 	        {
-	            var idx = buf.readInt16LE(0);
-				var r = buf.readInt16LE(2);
-				var x = buf.readInt16LE(4);
-				var rx_data = ([r,x,idx])
-				console.log([r,x,idx]);
+	        	var idx,r,x;
+				var rx_data = {
+				   idx: [idx = buf.readInt16LE(0)],
+				   r: 	[r = buf.readInt16LE(2)],
+				   x: 	[x = buf.readInt16LE(4)]
+				};
+				var scope_data = JSON.stringify(rx_data);
 
-				//by pasing the parsing and sending the buffer to be written
-				writer(buf)
+				writer(scope_data)
 			}
 		else {
 			console.log("invalid buf"); return
@@ -389,23 +323,16 @@ class scope_collector {
 
 	    dsp.rpc1(KERN_API_RPC, [KAPI_IBTEST_PASSES_SS_WRITE, s], "",1.0, function(){
 	        console.log('SS set');
-	        //setTimeout()
-	        //98%32 = 2
-
 	        dsp.rpc1(KERN_API_RPC, [KAPI_IBTEST_PASSES_FE_WRITE, f], "",1.0, function(){
 	          console.log("FE set")
-	          //160315 bug - dsp thinks this is [90,90] instead of [90,f] so I get 90%32 = 26
 	          dsp.rpc1(KERN_API_RPC, [KAPI_IBTEST_PASSES_NFE_WRITE, n], "",1.0, function(){
-	            //94%32 = 30
 	            console.log("NFE set")
 	            if(callBack){
 	              callBack();
-
 	            }
 	          })
 	        })
 	      });
-
 	  }
 
     haloTest(t){
@@ -459,9 +386,9 @@ class scope_collector {
     setInterval(function () {
         dsp.rpc0(22,[26]); // streaming rpc
         console.log('streaming ')
-        // setTimeout(function () {
-        //     dsp.rpc0(NP_RPC,[]);
-        // }, 100)
+        setTimeout(function () {
+            dsp.rpc0(NP_RPC,[]);
+        }, 100)
     },1000)
   }
 
@@ -479,7 +406,6 @@ class scope_collector {
 		});
 
 		s.on('message', function(e,rinfo){
-			// console.log('receiving dsp manual test')
 			if(e){
 
 				var idx = e.readInt16LE(0);
@@ -488,11 +414,8 @@ class scope_collector {
 				var rx_data=[r,x,idx];
 				ra.push(r);
 				xa.push(x);
-				// console.log('rx data',rx_data);
 				writer(rx_data)
 				if (idx == 1){
-					// console.log(ra);
-					// console.log(xa);
 					callBack([ra,xa]);
 					s.close();
 					s.unref();
@@ -500,9 +423,6 @@ class scope_collector {
 			}else{
 				s.close();
 			}
-			// setTimeout(function(){
-			// 	// callBack()
-			// },5000);
 		});
 
 		s.on('close', function(){
@@ -510,21 +430,12 @@ class scope_collector {
 			s.unref();
 			callBack()
 		});
-
-		// setTimeout(function(){
-		// 	if(idx != 1){
-		// 		s.close();
-		// 	}else{
-		// 		s.unref();
-		// 	}
-		// }, 1000);
 	}
 }
 
 
 // ####################################################################
 //  Arm scope data
-
 // ####################################################################
 function Fti_Scope(){
 	var scope = new scope_collector();
