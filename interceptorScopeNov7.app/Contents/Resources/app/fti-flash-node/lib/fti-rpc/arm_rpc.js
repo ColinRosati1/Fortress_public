@@ -55,8 +55,8 @@ class ArmRpcBase{
 	}
 	setCallBack(cb){
 		this.callBack = cb;
-		console.log("cb set")
-		console.log(cb)
+		// console.log("cb set")
+		// console.log(cb)
 	}
 	init_socket(){
 		/*
@@ -102,8 +102,8 @@ class ArmRpcBase{
 	send(packet, ip, port){
 		ip = ip || this.rem_ip;
 		port = port || this.rem_port;
-		console.log('port? ')
-		console.log(port)
+		// console.log('port? ')
+		// console.log(port)
 		this.socket.send(packet,0,packet.length,port,ip, function () {
 			// body...
 			console.log('sent packet!');
@@ -169,7 +169,7 @@ class ArmRpcBase{
 					if(self.callBack){
 						self.callBack(1);
 					}
-					//callBack(['fail','timeout'])
+					callBack(['fail','timeout'])
 					throw new ArmRpcErrorTimeout();
 
 				}
@@ -209,8 +209,8 @@ class ArmRpcBase{
 		//this.rpc(pkt,0)
 		this.packet_for(pkt,function(p){
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
-			console.log(p.byteLength)
-			console.log('echo')
+			// console.log(p.byteLength)
+			// console.log('echo')
 			callBack();
 
 		})
@@ -228,13 +228,13 @@ class ArmRpcBase{
 		
 	}
 	dsp_open_cb(callBack){
-		//this.rpc([11,5],0);
+		this.rpc([11,5],0);
 		var self = this;
 		
 		this.packet_for([11,5],function(p){
 			self.socket.send(p,0,p.length,self.rem_port,self.rem_ip )
-			console.log(p.byteLength)
-			console.log('dsp_open')
+			// console.log(p.byteLength)
+			// console.log('dsp_open')
 			callBack()
 
 		})
@@ -250,6 +250,7 @@ class ArmRpc extends ArmRpcBase{
 		}
 		port = port || ARM_RPC_PORT;
 		loc_port = loc_port || 0;
+		
 
 		this.rem_ip = host
 		this.rem_port = port
@@ -296,7 +297,7 @@ class ArmRpc extends ArmRpcBase{
 			var aes = crypto.createDecipheriv('aes-128-ecb', new Buffer(self.KEY), "")
 			aes.setAutoPadding(false);
 			var k = aes.update((msg.slice(2,msg.byteLength)).toString('binary'),'binary');
-			console.log(k.length)
+			// console.log(k.length)
 			k = Buffer.concat([k,aes.final()]);
 			self.aesk = k;
 			var aesEcb = new aesjs.ModeOfOperation.ecb(self.KEY);
@@ -323,7 +324,8 @@ class ArmRpc extends ArmRpcBase{
 
 		var self = this;
 
-		this.init_session_key(function(c){var bsize = self.KEY.length
+		this.init_session_key(function(c){
+		var bsize = self.KEY.length
 		var pad = bsize - ((dat.length + 2)%bsize)
 		if(pad == bsize){
 			pad = 0;
@@ -332,7 +334,6 @@ class ArmRpc extends ArmRpcBase{
 		for(var i=0;i<pad;i++){
 			parry.push(0)
 		}
-		console.log('pad size: ' + pad.toString())
 		var bu = new Buffer(2)//[dat.length]);
 		bu.writeUInt16LE(dat.length)
 		dat = Buffer.concat([bu ,dat, new Buffer(parry)])
@@ -341,15 +342,11 @@ class ArmRpc extends ArmRpcBase{
 		var en = c[0];
 		var t;
 		
-		
-	
 		var pkt = en.encrypt(dat.slice(0,bsize))
 
 		callBack(pkt)
 
 	})	
-
-		
 	}
 }
 

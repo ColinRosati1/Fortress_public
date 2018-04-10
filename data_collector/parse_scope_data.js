@@ -87,8 +87,8 @@
 				var scope_data = JSON.stringify(rx_data);
 				
 		        data += scope_data;
-		        // writer(rx_data)
-		        readableStream.push(data);
+		        writer(rx_data)
+		        // readableStream.push(data);
 		        // inStream.pipe(process.stdout);
 		        // console.log(rx_data)
 		    }
