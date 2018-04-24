@@ -10,34 +10,93 @@
 	var jsonfile = require('jsonfile')
 	var stream = require('stream')
 
+	var  readline = require('readline');	
+
 	var read_file = 'scopedatafile.txt';
 	var wr_file = 'parsed_scope.json';
 	var   myFuncCalls = 0;
+  
+	//So if you can read the file as a string of hex characters and read up to a newline character, 
+	//so you’d have a long string which is hex values, so “1a1234567890abcdef” etc. 
+	//Then for each packet you read like that, pass the string into the above function and 
+	//it should give you a raw byte array, which you can then read through with your current parsing function and get Int8’s,
+	// Int16’s, etc. Hope this is helpful in some way….
+
+	function parseHexString(str) {
+	    var result = [];
+	    while (str.length >= 2) {
+	        result.push(parseInt(str.substring(0, 2), 16));
+	        str = str.substring(2, str.length);
+	        console.log('(✿ ♥‿♥) ', str)
+	    	parse_scope_data(str)
+	    }
+	    
+	    return result;
+	}
 
 	function parse_scope_data(buf){
 	    var self = this;
-	    if(buf)
-	    {
-	        console.log('its a buffer', buf)
-	        console.log('type of buf = ',typeof(buf))
-
-	        var idx = buf.readInt16LE(0)
-			var r = buf.readInt16LE(2);
-			var x = buf.readInt16LE(4);
+	    var i = 1;
+	    // if(buf)
+	    	var buf = new Buffer(buf)
+	    // {
+	    	// console.log("new function string hex ",parseHexString(JSON.stringify(buf))) 
+ 
+	        i++
+	    	console.log('how many chunks = ',i)
+	    	console.log('bugs = ', buf)
 			debugger;
-          
+
+			var buf1 = new Buffer(2);
+			buf.copy(buf1, 0, 1, 2);
+			console.log(buf1);
+			var newcount = buf1.readInt16LE()
+
+			var buf2 = new Buffer(4);
+			buf.copy(buf2, 0, 3, 6);
+			var log_in = buf2.readInt32LE()
+
+			var buf3 = new Buffer(4);
+			buf.copy(buf3, 0, 7, 10);
+			var log_out = buf3.readInt32LE();
+
+			var buf4 = new Buffer(2);
+			buf.copy(buf4, 0, 11, 12);
+			var r = buf4.readInt16LE()
+
+			var buf5 = new Buffer(2);
+			buf.copy(buf5, 0, 13, 14);
+			var x = buf5.readInt16LE()
+
+			var buf6 = new Buffer(2);
+			buf.copy(buf6, 0, 15, 16);
+			var phaseR = buf6.readInt16LE()
+
+			var buf7 = new Buffer(2);
+			buf.copy(buf7, 0, 17, 18);
+			var phaseX = buf7.readInt16LE()
+
+			var buf8 = new Buffer(4);
+			buf.copy(buf8, 0, 19, 24);
+			var sig_norm = buf8.readInt32LE()
+
 			var rx_data = {
-			   idx: [idx],
-			   r: 	[r],
-			   x: 	[x]
+			   sig: [sig = buf.readInt8(0)], 
+			   count: [newcount],
+			   log_in:    [log_in],
+			   log_out:   [log_out],
+			   r: 		  [r],
+			   x: 		  [x],
+			   phaseR:    [phaseR],
+			   phaseX:    [phaseX],
+			   sig_norm:  [sig_norm] 
+
 			};
 
 			debugger;
 			var scope_data = JSON.stringify(rx_data);
-			console.log('pasres = ',rx_data);
-			debugger;
-			writer(scope_data)
-		}
+	        writer(scope_data)
+	    // }
 	}
 
 	// ####################################################################
@@ -49,62 +108,46 @@
 			console.log('no data to write')
 			return
 		}
+
 		console.log('writing')
 		console.log( data );
 	
 		var wstream = fs.createWriteStream(wr_file,{flags:'a'})
-		wstream.write(data+'\n' );
+		wstream.write(data);
 
 	}
-
+//================================================
+// signal & count = 1a 0200 		1 + 2 Bytes
+// Logical input  = 0e 0000 00		4 Bytes
+// logical ouput  = 08 1100 00		4 Bytes
+// R			   = 00 ef 			2 Bytes
+// x			   = bf bd 			2 Bytes
+// phaseR		   = 00 ef 			2 Bytes
+// phaseX		   = bf bd  		2 Bytes 
+// sig_norm	   = 00 00 			2 Bytes
+//================================================
 	function main(){
 		console.log('begin translating ...');
-		var readableStream = fs.createReadStream(read_file);
-		var data = '';
-		var chunk;
-		var i = 1;
 
-		const inStream = new stream();
+		var instream = fs.createReadStream(read_file);
+		var outstream = new stream;
+		outstream.readable = true;
+		outstream.writable = true;
 
-		const stats = fs.statSync(read_file)
-		console.log('size of file', stats.size)
-
-		readableStream.on('data', (chunk) => {
-		  console.log(`Received ${chunk.length} bytes of data.`);
-		   while (chunk != null) {
-
-		    	i++
-		    	console.log('how many chunks = ',i)
-    			debugger;
-
-				var rx_data = {
-				   idx: [idx = chunk.readInt16LE(0)],
-				   r: 	[r = chunk.readInt16LE(2)],
-				   x: 	[x = chunk.readInt16LE(4)]
-				};
-
-				debugger;
-				var scope_data = JSON.stringify(rx_data);
-				
-		        data += scope_data;
-		        writer(rx_data)
-		        // readableStream.push(data);
-		        // inStream.pipe(process.stdout);
-		        // console.log(rx_data)
-		    }
+		var rl = readline.createInterface({
+		    input: instream,
+		    output: outstream,
+		    terminal: false
 		});
 
-		readableStream.on('end', function() {
-			 console.log(`Finished Reading The Trex File ${data.length}`);
-			console.log(data)
-			writer(data)
-			// parse_scope_data(data);
-		    // console.log(JSON.stringify(data))
+		rl.on('line', function(line) {
+		    parseHexString(line)
+		    // console.log('reading = ', JSON.stringify(line))
+		    // parse_scope_data(line)
+		    //Do your stuff ...
+		    //Then write to outstream
+		    // rl.write(cubestuff);
 		});
-
-
 	}
 
-  	
-
-main()
+	main();

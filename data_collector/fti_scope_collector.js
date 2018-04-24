@@ -17,11 +17,8 @@ var NetInterface = require('./fti/lib/fti-rpc/net-interface.js');
 var ds = require('./fti/lib/fti-rpc/rpc.js');
 var Fti = require('./fti');
 var sys = require('util')
-var exec = require('child_process').exec;
 var dgram = require('dgram');
-var jsonfile = require('jsonfile')
-var file = 'data.json';
-var child;
+
 var path = ("scopedata.txt");
 
 // RPI GPIO Pins
@@ -144,7 +141,8 @@ function main() {
 	var button = wpi.digitalRead(9);
 	wpi.digitalWrite(11, 1);
     wpi.digitalWrite(10, 1);
-    GPIO();
+    // GPIO();
+    Fti_Scope()
 }
 
 // ####################################################################
@@ -152,31 +150,18 @@ function main() {
 // ####################################################################
 function writer(data)
 {
+	console.log('writing to file')
 	if(data==0){
 		console.log('no data to write')
 		return
 	}
-
-	var netinfo= [];
-	var netinfo_json= [];
-	var data_buffer = new Buffer(data)
-
-	console.log('writer data = ', data);
-	child = exec("date", function (error, stdout) {
-	});
-
-
-		var wstream = fs.createWriteStream(path,{flags:'a'})
-		wstream.write(data+'\n' );
-
-}
-
-// ####################################################################
-// GPIO closes pins
-// ####################################################################
-function exit()
-{
-
+	
+	var buff = new Buffer(data);
+	var textChunk = buff.toString('hex');
+    console.log('buffer = ', textChunk)
+	var options = {'flags': 'a', 'encoding': 'binary', 'mode': 0666};
+	var wstream = fs.createWriteStream(path,options)
+	wstream.write(textChunk + '\n');
 }
 
 // ####################################################################
